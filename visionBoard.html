@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Vision Board 2025</title>
+    <!-- Import Moon Dance font from Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Moon+Dance&display=swap" rel="stylesheet" />
+    <!-- Secondary font for body text -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet" />
+    <!-- Libraries for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        /* Global Reset/Defaults */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #f7f7f7;
+            font-family: "Poppins", sans-serif;
+            color: #333;
+            position: relative;
+        }
+
+        /* Page title in Moon Dance font */
+        .page-title {
+            text-align: center;
+            color: grey;
+            font-family: "Moon Dance", cursive;
+            font-size: 3rem;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Main Vision Board Container */
+        .vision-board {
+            width: 1000px;
+            max-width: 90%;
+            margin: 0 auto;
+            border: 2px solid lightgray;
+            border-radius: 8px;
+            background: #fff;
+            padding: 10px;
+            /* Reduced padding to avoid extra white space */
+            position: relative;
+        }
+
+        /* Save icon button at top-right (outside the board) */
+        .save-icon {
+            position: absolute;
+            top: 100px;
+            right: 180px;
+            background: #5b6ef5;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .save-icon:hover {
+            background: #4857c7;
+        }
+
+        .save-icon svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        /* Motivational Quote (blur effect on characters) */
+        .motivational-quote {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+
+        .motivational-quote span {
+            display: inline-block;
+            filter: blur(4px);
+            transition: filter 0.2s ease;
+            white-space: pre;
+        }
+
+        /* 2x2 Grid for the four sections, with small gap */
+        .board-grid {
+            display: grid;
+            grid-template-columns: 310px 600px;
+            grid-template-rows: auto auto;
+            column-gap: 1px;
+            row-gap: 10px;
+            /* Small gap between containers */
+            justify-content: center;
+        }
+
+        /* Base styles for each board section */
+        .board-section {
+            border: 2px solid #eee;
+            background: #fafafa;
+            position: relative;
+            overflow: hidden;
+            margin: 0;
+            /* No extra margin around sections */
+        }
+
+        .section-heading {
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: grey;
+            font-family: "Moon Dance", cursive;
+            font-size: 1.4rem;
+        }
+
+        .content-area {
+            position: absolute;
+            top: 40px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        /* 1) Travel Destinations (square) */
+        .travel-container {
+            width: 300px;
+            height: 300px;
+            border-radius: 8px;
+        }
+
+        .travel-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 5px;
+        }
+
+        .image-slot {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            background: #fff;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-slot img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .file-input {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            font-size: 0.7rem;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 4px;
+            padding: 2px 5px;
+            border: 1px solid #ccc;
+        }
+
+        /* 2) Goals in 2025 (rectangle) */
+        .goals-container {
+            width: 600px;
+            height: 300px;
+            border-radius: 8px;
+        }
+
+        .goals-content {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            overflow-y: auto;
+        }
+
+        .goal-item {
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .goal-label {
+            display: inline-block;
+            min-width: 180px;
+            padding: 4px 0;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            color: #555;
+            cursor: default;
+        }
+
+        .goal-input {
+            display: none;
+            font-size: 1rem;
+            padding: 4px;
+            margin-top: 2px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 80%;
+        }
+
+        .goal-item:hover .goal-label {
+            display: none;
+        }
+
+        .goal-item:hover .goal-input {
+            display: inline-block;
+        }
+
+        /* 3) Things You Like (rectangle) with same style as goals for text input */
+        .likes-container {
+            width: 310px;
+            height: 200px;
+            border-radius: 8px;
+        }
+
+        .likes-content {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            overflow-y: auto;
+        }
+
+        .like-item {
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .like-label {
+            display: inline-block;
+            min-width: 180px;
+            padding: 4px 0;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            color: #555;
+            cursor: default;
+        }
+
+        .like-input {
+            display: none;
+            font-size: 1rem;
+            padding: 4px;
+            margin-top: 2px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 80%;
+        }
+
+        .like-item:hover .like-label {
+            display: none;
+        }
+
+        .like-item:hover .like-input {
+            display: inline-block;
+        }
+
+        /* 4) Career (circular) */
+        .career-container {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+        }
+
+        .career-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .career-preview {
+            width: 80%;
+            max-width: 200px;
+            height: 120px;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            background: #fff;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .career-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Title -->
+    <h1 class="page-title">Vision Board</h1>
+
+    <!-- Save Icon (top-right, outside the container) -->
+    <button class="save-icon" onclick="saveAsPDF()" aria-label="Save as PDF">
+        <!-- Inline SVG for download icon -->
+        <svg viewBox="0 0 24 24">
+            <path d="M14 2H10V8H5L12 15L19 8H14V2ZM5 18H19V20H5V18Z" />
+        </svg>
+    </button>
+
+    <!-- Main Vision Board Container -->
+    <div class="vision-board" id="visionBoard">
+
+        <!-- Motivational Quote -->
+        <div class="motivational-quote" id="motivationalQuote"></div>
+
+        <!-- 2x2 Grid of containers -->
+        <div class="board-grid">
+            <!-- 1) Travel Destinations (Square) -->
+            <div class="board-section travel-container">
+                <h2 class="section-heading">Travel Destinations</h2>
+                <div class="content-area travel-content">
+                    <div class="image-slot">
+                        <img id="travelImg1" alt="Image 1" />
+                        <input class="file-input" type="file" accept="image/*"
+                            onchange="previewImage(event, 'travelImg1')" />
+                    </div>
+                    <div class="image-slot">
+                        <img id="travelImg2" alt="Image 2" />
+                        <input class="file-input" type="file" accept="image/*"
+                            onchange="previewImage(event, 'travelImg2')" />
+                    </div>
+                    <div class="image-slot">
+                        <img id="travelImg3" alt="Image 3" />
+                        <input class="file-input" type="file" accept="image/*"
+                            onchange="previewImage(event, 'travelImg3')" />
+                    </div>
+                    <div class="image-slot">
+                        <img id="travelImg4" alt="Image 4" />
+                        <input class="file-input" type="file" accept="image/*"
+                            onchange="previewImage(event, 'travelImg4')" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2) Goals in 2025 (Rectangle) -->
+            <div class="board-section goals-container">
+                <h2 class="section-heading">Goals in 2025</h2>
+                <div class="content-area goals-content">
+                    <!-- Goal 1 -->
+                    <div class="goal-item" onmouseenter="showInput('goal1')" onmouseleave="hideInput('goal1')">
+                        <span id="goal1Label" class="goal-label">Click to add goal...</span>
+                        <input id="goal1Input" class="goal-input" type="text" placeholder="Add your goal..." />
+                    </div>
+                    <!-- Goal 2 -->
+                    <div class="goal-item" onmouseenter="showInput('goal2')" onmouseleave="hideInput('goal2')">
+                        <span id="goal2Label" class="goal-label">Click to add goal...</span>
+                        <input id="goal2Input" class="goal-input" type="text" placeholder="Add your goal..." />
+                    </div>
+                    <!-- Goal 3 -->
+                    <div class="goal-item" onmouseenter="showInput('goal3')" onmouseleave="hideInput('goal3')">
+                        <span id="goal3Label" class="goal-label">Click to add goal...</span>
+                        <input id="goal3Input" class="goal-input" type="text" placeholder="Add your goal..." />
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3) Things You Like (Rectangle) -->
+            <div class="board-section likes-container">
+                <h2 class="section-heading">Things You Like</h2>
+                <div class="content-area likes-content">
+                    <!-- Like 1 -->
+                    <div class="like-item" onmouseenter="showInput('like1')" onmouseleave="hideInput('like1')">
+                        <span id="like1Label" class="like-label">Click to add...</span>
+                        <input id="like1Input" class="like-input" type="text" placeholder="Add something you like..." />
+                    </div>
+                    <!-- Like 2 -->
+                    <div class="like-item" onmouseenter="showInput('like2')" onmouseleave="hideInput('like2')">
+                        <span id="like2Label" class="like-label">Click to add...</span>
+                        <input id="like2Input" class="like-input" type="text" placeholder="Add something you like..." />
+                    </div>
+                    <!-- Like 3 -->
+                    <div class="like-item" onmouseenter="showInput('like3')" onmouseleave="hideInput('like3')">
+                        <span id="like3Label" class="like-label">Click to add...</span>
+                        <input id="like3Input" class="like-input" type="text" placeholder="Add something you like..." />
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4) Career (Circular) -->
+            <div class="board-section career-container">
+                <h2 class="section-heading">Career</h2>
+                <div class="content-area career-content">
+                    <div class="career-preview">
+                        <img id="careerImg" alt="Career Representation" />
+                    </div>
+                    <input class="file-input" type="file" accept="image/*"
+                        onchange="previewImage(event, 'careerImg')" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /*************************
+         * Quote Blur Functionality
+         *************************/
+        const quote =
+            "Believe you can and you're halfway there. – Theodore Roosevelt";
+        const quoteContainer = document.getElementById("motivationalQuote");
+        const quoteSpans = [];
+
+        quote.split("").forEach((char, index) => {
+            const span = document.createElement("span");
+            span.textContent = char;
+            span.addEventListener("mouseenter", () => highlightSpan(index));
+            span.addEventListener("mouseleave", restoreAll);
+            quoteContainer.appendChild(span);
+            quoteSpans.push(span);
+        });
+
+        function highlightSpan(hoverIndex) {
+            quoteSpans.forEach((span, i) => {
+                if (i >= hoverIndex - 3 && i <= hoverIndex + 3) {
+                    span.style.filter = "blur(0)";
+                } else {
+                    span.style.filter = "blur(4px)";
+                }
+            });
+        }
+
+        function restoreAll() {
+            quoteSpans.forEach((span) => {
+                span.style.filter = "blur(4px)";
+            });
+        }
+
+        /*************************
+         * Image Preview & Hide File Input
+         *************************/
+        function previewImage(event, previewId) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const previewImg = document.getElementById(previewId);
+                    previewImg.src = e.target.result;
+                    // Hide the file input after image is loaded
+                    event.target.style.display = "none";
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        /*************************
+         * Goals & Likes Edit on Hover
+         *************************/
+        function showInput(itemId) {
+            const label = document.getElementById(itemId + "Label");
+            const input = document.getElementById(itemId + "Input");
+            if (label && input) {
+                label.style.display = "none";
+                input.style.display = "inline-block";
+            }
+        }
+
+        function hideInput(itemId) {
+            const label = document.getElementById(itemId + "Label");
+            const input = document.getElementById(itemId + "Input");
+            if (label && input) {
+                if (input.value.trim() !== "") {
+                    label.textContent = input.value;
+                }
+                label.style.display = "inline-block";
+                input.style.display = "none";
+            }
+        }
+
+        /*************************
+         * Save to PDF
+         *************************/
+        async function saveAsPDF() {
+            // Use html2canvas to capture the vision board
+            const boardElement = document.getElementById("visionBoard");
+            const canvas = await html2canvas(boardElement, { scale: 2 });
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF("p", "pt", "a4");
+            const imgData = canvas.toDataURL("image/png");
+
+            // Calculate width/height to maintain aspect ratio
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            // The board's ratio
+            const boardRatio = canvas.height / canvas.width;
+            // Height if we scale to full PDF width
+            const newHeight = pdfWidth * boardRatio;
+
+            pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, newHeight);
+            pdf.save("vision-board.pdf");
+        }
+    </script>
+</body>
+
+</html>

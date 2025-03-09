@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Typing Speed Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+            /* lighter grey */
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: #d0d0d0;
+            /* darker grey for the container */
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        /* Controls (time, reset, save) displayed above the paragraph container */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        #timer {
+            font-weight: bold;
+            color: #333;
+            font-size: 1.2em;
+        }
+
+        .top-right-buttons {
+            display: flex;
+        }
+
+        /* Icon-only buttons */
+        .icon-btn {
+            background: lightgrey;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            margin-left: 5px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:hover {
+            background: #ccc;
+        }
+
+        .icon-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: #333;
+        }
+
+        /* The typing area itself */
+        #typing-area {
+            font-size: 1.1em;
+            line-height: 1.6;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: #fafafa;
+            padding: 15px;
+            min-height: 120px;
+            cursor: text;
+            outline: none;
+            caret-color: transparent;
+            /* hide caret */
+            user-select: none;
+            /* disallow text selection */
+        }
+
+        /* Initially display paragraph in light grey; typed letters become black or red */
+        .char.grey-char {
+            color: lightgrey;
+        }
+
+        .char.black-char {
+            color: black;
+        }
+
+        .char.red-char {
+            color: red;
+        }
+
+        /* Results (WPM and Accuracy) side by side */
+        #results {
+            display: none;
+            /* hidden until test ends */
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+        }
+
+        #results p {
+            margin: 0;
+            font-size: 1.1em;
+            text-align: center;
+        }
+
+        /* Saved results container */
+        #saved-results {
+            display: none;
+            /* hidden if no saved results */
+            margin-top: 30px;
+        }
+
+        #saved-results h2 {
+            text-align: center;
+        }
+
+        #results-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.95em;
+        }
+
+        #results-list li {
+            background: #f9f9f9;
+            margin: 5px 0;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .delete-btn {
+            background: lightgrey;
+            border: none;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+        }
+
+        .delete-btn:hover {
+            background: #ccc;
+        }
+
+        .delete-btn svg {
+            width: 14px;
+            height: 14px;
+            fill: #333;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Typing Speed Test</h1>
+
+        <!-- Controls above the paragraph container -->
+        <div class="controls">
+            <div id="timer">60</div>
+            <div class="top-right-buttons">
+                <button id="reset-btn" class="icon-btn" title="Reset">
+                    <!-- Reset (circular arrow) icon -->
+                    <svg viewBox="0 0 16 16">
+                        <path d="M8 1a7 7 0 1 0 7 7h-1.5A5.5 5.5 0 1 1 8 2.5V1z" />
+                        <path d="M8 4v4l3 3 .707-.707L9 7.293V4z" />
+                    </svg>
+                </button>
+                <button id="save-btn" class="icon-btn" title="Save" disabled>
+                    <!-- Save (floppy) icon -->
+                    <svg viewBox="0 0 16 16">
+                        <path d="M1 1v14h14V4.5l-3-3H1zm9 1h2.5l.5.5V3H10V2zM2 2h7v3h3v8H2V2zm3 6v1h6V8H5z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Typing area -->
+        <div id="typing-area" contenteditable="true"></div>
+
+        <!-- Results below the paragraph -->
+        <div id="results">
+            <p>WPM: <span id="wpm">0</span></p>
+            <p>Accuracy: <span id="accuracy">0</span>%</p>
+        </div>
+
+        <!-- Saved results -->
+        <div id="saved-results">
+            <h2>Saved Results</h2>
+            <ul id="results-list"></ul>
+        </div>
+    </div>
+
+    <script>
+        // A list of meaningful English words
+        const WORD_POOL = [
+            "experience", "happiness", "inspiration", "knowledge", "opportunity", "achievement", "creative", "design",
+            "success", "technology", "education", "learning", "society", "improvement", "progress", "wonderful", "journey",
+            "connection", "communication", "collaboration", "responsibility", "solution", "innovation", "intelligence",
+            "analysis", "strategy", "planning", "organization", "growth", "development", "exploration", "discovery",
+            "curiosity", "motivation", "purpose", "perspective", "imagination", "enthusiasm", "dedication", "commitment",
+            "contribution", "integrity", "inclusion", "diversity", "excellence", "quality", "consistency", "perseverance",
+            "stability", "efficiency", "effectiveness", "flexibility", "adaptability", "creativity", "evolution", "transform",
+            "wonder", "accomplish", "achieve", "aspire", "brighten", "change", "challenge", "collaborate", "communicate",
+            "compassion", "confidence", "contribute", "deliver", "embrace", "empower", "enable", "encourage", "envision",
+            "excel", "foster", "fulfill", "grow", "improve", "inspire", "innovate", "lead", "learn", "mentor", "nurture",
+            "optimize", "pioneer", "progress", "realize", "refine", "share", "succeed", "sustain", "thrive", "unite", "uplift",
+            "value", "vision"
+        ];
+
+        let displayedParagraph = "";
+        let displayedChars = [];
+        let typedChars = [];
+        let typedIndex = 0;
+        let timerInterval;
+        let timeLeft = 60;
+        let timerStarted = false;
+        let testInProgress = false;
+
+        const typingArea = document.getElementById("typing-area");
+        const timerDisplay = document.getElementById("timer");
+        const resetBtn = document.getElementById("reset-btn");
+        const saveBtn = document.getElementById("save-btn");
+        const resultsDiv = document.getElementById("results");
+        const wpmDisplay = document.getElementById("wpm");
+        const accuracyDisplay = document.getElementById("accuracy");
+        const savedResultsDiv = document.getElementById("saved-results");
+        const resultsList = document.getElementById("results-list");
+
+        // Generate a paragraph of 60 random meaningful words
+        function generateParagraph() {
+            let words = [];
+            for (let i = 0; i < 60; i++) {
+                const randomIndex = Math.floor(Math.random() * WORD_POOL.length);
+                words.push(WORD_POOL[randomIndex]);
+            }
+            displayedParagraph = words.join(" ");
+        }
+
+        // Display the paragraph as grey letters (spans)
+        function displayParagraph() {
+            typingArea.innerHTML = ""; // clear previous content
+            displayedChars = displayedParagraph.split(""); // array of all characters
+            typedChars = new Array(displayedChars.length).fill(null);
+            typedIndex = 0;
+
+            displayedChars.forEach((ch) => {
+                const span = document.createElement("span");
+                span.textContent = ch;
+                span.classList.add("char", "grey-char");
+                typingArea.appendChild(span);
+            });
+        }
+
+        // Start the 60-second timer
+        function startTimer() {
+            timerStarted = true;
+            testInProgress = true;
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    endTest();
+                }
+            }, 1000);
+        }
+
+        // End the test
+        function endTest() {
+            clearInterval(timerInterval);
+            testInProgress = false;
+
+            // Count total typed characters (ignoring nulls)
+            let totalTypedChars = typedChars.filter(ch => ch !== null).length;
+
+            // Count correct characters
+            let correctChars = 0;
+            for (let i = 0; i < typedChars.length; i++) {
+                if (typedChars[i] !== null && typedChars[i] === displayedChars[i]) {
+                    correctChars++;
+                }
+            }
+
+            // Calculate WPM: totalTypedChars / 5 (in 1 minute)
+            const wpm = Math.floor(totalTypedChars / 5);
+
+            // Calculate Accuracy: correctChars / totalTypedChars * 100
+            let accuracy = 0;
+            if (totalTypedChars > 0) {
+                accuracy = ((correctChars / totalTypedChars) * 100).toFixed(2);
+            }
+
+            wpmDisplay.textContent = wpm;
+            accuracyDisplay.textContent = accuracy;
+
+            // Show the results
+            resultsDiv.style.display = "flex";
+
+            // Enable Save button
+            saveBtn.disabled = false;
+        }
+
+        // Reset the test
+        function resetTest() {
+            clearInterval(timerInterval);
+            timeLeft = 60;
+            timerDisplay.textContent = timeLeft;
+            timerStarted = false;
+            testInProgress = false;
+            saveBtn.disabled = true;
+
+            // Hide results until next test finishes
+            resultsDiv.style.display = "none";
+
+            // Generate and display new paragraph
+            generateParagraph();
+            displayParagraph();
+            typingArea.focus();
+        }
+
+        // Save the result to localStorage
+        function saveResult() {
+            const wpm = wpmDisplay.textContent;
+            const accuracy = accuracyDisplay.textContent;
+
+            // Build result object
+            const result = {
+                date: new Date().toLocaleString(),
+                wpm: wpm,
+                accuracy: accuracy
+            };
+
+            // Load existing results
+            let storedResults = JSON.parse(localStorage.getItem("typingResults")) || [];
+
+            const duplicateExists = storedResults.some(r => r.wpm === result.wpm && r.accuracy === result.accuracy);
+
+            if (!duplicateExists) {
+                storedResults.push(result);
+                localStorage.setItem("typingResults", JSON.stringify(storedResults));
+            }
+
+            // Update the results list
+            displaySavedResults();
+        }
+
+        // Display all saved results from localStorage, each with a delete icon
+        function displaySavedResults() {
+            let storedResults = JSON.parse(localStorage.getItem("typingResults")) || [];
+            resultsList.innerHTML = "";
+
+            if (storedResults.length > 0) {
+                // Show saved results container
+                savedResultsDiv.style.display = "block";
+
+                storedResults.forEach((res, i) => {
+                    const li = document.createElement("li");
+                    li.textContent = `Date: ${res.date} | WPM: ${res.wpm} | Accuracy: ${res.accuracy}%`;
+
+                    // Add delete button
+                    const deleteBtn = document.createElement("button");
+                    deleteBtn.classList.add("delete-btn");
+                    deleteBtn.title = "Delete";
+                    deleteBtn.innerHTML = `
+            <svg viewBox="0 0 16 16">
+              <path d="M5.5 5.5v6m5-6v6M2 3.5h12M6 2.5h4a1 1 0 0 1 1 1v0.5h-6v-0.5a1 1 0 0 1 1-1zM3 3.5h10v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-10z"/>
+            </svg>
+          `;
+                    deleteBtn.addEventListener("click", () => {
+                        storedResults.splice(i, 1);
+                        localStorage.setItem("typingResults", JSON.stringify(storedResults));
+                        displaySavedResults();
+                    });
+
+                    li.appendChild(deleteBtn);
+                    resultsList.appendChild(li);
+                });
+            } else {
+                // Hide if no results
+                savedResultsDiv.style.display = "none";
+            }
+        }
+
+        // Check if the pressed key is a valid character we want to handle
+        // We'll allow letters, numbers, space, and some punctuation
+        function isValidCharacter(key) {
+            if (key.length === 1 && /[a-zA-Z0-9.,!?;'":]/.test(key)) return true;
+            if (key === " ") return true;
+            return false;
+        }
+
+        // Handle keydown to manage typed characters
+        typingArea.addEventListener("keydown", function (e) {
+            // Prevent the browser from modifying content by default
+            e.preventDefault();
+
+            // If the test hasn't started yet and the user presses a valid character, start the timer
+            if (!timerStarted && isValidCharacter(e.key)) {
+                startTimer();
+            }
+
+            // If test is over or time is up, do not accept input
+            if (!testInProgress) return;
+
+            // Handle backspace
+            if (e.key === "Backspace") {
+                if (typedIndex > 0) {
+                    typedIndex--;
+                    typedChars[typedIndex] = null;
+                    const span = typingArea.querySelectorAll(".char")[typedIndex];
+                    // Restore the original letter in grey
+                    span.textContent = displayedChars[typedIndex];
+                    span.classList.remove("black-char", "red-char");
+                    span.classList.add("grey-char");
+                }
+                return;
+            }
+
+            // If it's a valid character and we still have room
+            if (isValidCharacter(e.key) && typedIndex < displayedChars.length) {
+                typedChars[typedIndex] = e.key;
+                const span = typingArea.querySelectorAll(".char")[typedIndex];
+
+                // If correct
+                if (e.key === displayedChars[typedIndex]) {
+                    span.textContent = displayedChars[typedIndex]; // original letter
+                    span.classList.remove("grey-char", "red-char");
+                    span.classList.add("black-char");
+                }
+                // If incorrect
+                else {
+                    // Show the typed letter in red
+                    span.textContent = e.key;
+                    span.classList.remove("grey-char", "black-char");
+                    span.classList.add("red-char");
+                }
+                typedIndex++;
+            }
+        });
+
+        // Page load setup
+        window.onload = function () {
+            generateParagraph();
+            displayParagraph();
+            displaySavedResults();
+            typingArea.focus();
+        };
+
+        // Button listeners
+        resetBtn.addEventListener('click', resetTest);
+        saveBtn.addEventListener('click', saveResult);
+    </script>
+</body>
+
+</html>

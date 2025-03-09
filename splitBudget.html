@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Split Your Expenses</title>
+    <style>
+        /* Overall page styling */
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #ccc;
+            /* Grey background */
+            height: 100%;
+        }
+
+        /* Centered page title with dark grey color and no extra background */
+        .page-title {
+            text-align: center;
+            color: #555;
+            margin: 20px 0;
+        }
+
+        /* Main container for left (groups) and right (details) */
+        .container {
+            display: flex;
+            width: 90%;
+            margin: 0 auto;
+            box-sizing: border-box;
+            /* Fill nearly full screen minus title space */
+            height: calc(100vh - 80px);
+        }
+
+        /* Left container: full height, border, rounded edges, lighter grey background */
+        .left-container {
+            width: 30%;
+            border: 2px solid #555;
+            border-radius: 8px;
+            background-color: #ddd;
+            /* Lighter grey background */
+            padding: 20px;
+            box-sizing: border-box;
+            margin-right: 20px;
+        }
+
+        .left-container button {
+            margin-bottom: 20px;
+        }
+
+        /* Header for groups label (shown only if there is at least one group) */
+        #groupsHeader h2 {
+            margin-top: 0;
+        }
+
+        /* Right container: full height, border, rounded edges, lighter grey background */
+        .right-container {
+            flex: 1;
+            border: 2px solid #555;
+            border-radius: 8px;
+            background-color: #ddd;
+            /* Lighter grey background */
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        /* Buttons: dark grey background, white text */
+        button {
+            background-color: #444;
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            cursor: pointer;
+            margin-right: 5px;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background-color: #666;
+        }
+
+        /* Group list items */
+        .group-item {
+            display: flex;
+            align-items: center;
+            background-color: #eaeaea;
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .group-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        .group-photo-thumb {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+        }
+
+        /* Group detail header: photo, name, type badge, icons in top-right */
+        .group-detail-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .group-detail-header h2 {
+            margin: 0 0 5px 0;
+        }
+
+        .group-detail-header img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 20px;
+            border: 1px solid #ccc;
+        }
+
+        /* Container for the icons in the top-right of the header */
+        .icon-buttons {
+            margin-left: auto;
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Icon button styling (dark grey background) */
+        .icon-button {
+            background-color: #444;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+        .icon-button:hover {
+            background-color: #666;
+        }
+
+        /* Minimal icons (inline SVG) with white fill to contrast dark background */
+        .icon {
+            width: 20px;
+            height: 20px;
+            fill: #fff;
+        }
+
+        /* Smaller text for the group type badge */
+        .group-type-badge {
+            display: inline-block;
+            margin-left: 10px;
+            background-color: #666;
+            color: #fff;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 0.6em;
+            /* smaller text size */
+        }
+
+        /* Members line: one line, commas in between */
+        .members-line {
+            font-size: 0.85em;
+            margin: 0px 0 0 0;
+        }
+
+        /* Balances and Debts sections */
+        .balances,
+        .debts {
+            background-color: #e9e9e9;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+
+        .balances ul,
+        .debts ul {
+            list-style: none;
+            padding-left: 0;
+            margin: 0;
+        }
+
+        .balances li,
+        .debts li {
+            margin-bottom: 5px;
+        }
+
+        /* Add Expense section styling */
+        .section {
+            background-color: #eaeaea;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 6px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        .modal {
+            background: #fff;
+            padding: 20px;
+            border-radius: 6px;
+            width: 300px;
+            max-width: 90%;
+            position: relative;
+        }
+
+        .modal h2 {
+            margin-top: 0;
+            text-align: center;
+        }
+
+        /* Close (X) button sized properly */
+        .close-modal-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            background-color: #444;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-modal-btn:hover {
+            background: #666;
+        }
+
+        /* Photo upload container: circular container for the person icon */
+        .photo-upload-container {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .photo-upload-container img {
+            width: 80px;
+            height: 80px;
+            cursor: pointer;
+            border: 2px solid #ccc;
+            border-radius: 50%;
+            padding: 5px;
+        }
+
+        .photo-upload-container img:hover {
+            background-color: #f0f0f0;
+        }
+
+        #groupPhotoInput {
+            display: none;
+        }
+
+        /* Center the "Create Group" button in the modal */
+        .button-container {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Centered page title with dark grey color -->
+    <div class="page-title">
+        <h1>Split Your Expenses</h1>
+    </div>
+
+    <!-- Main container with left (groups) and right (details) -->
+    <div class="container">
+        <!-- Left container -->
+        <div class="left-container">
+            <button onclick="openCreateGroupModal()">Create Group</button>
+            <div id="groupsHeader"></div>
+            <div id="groupsList"></div>
+        </div>
+
+        <!-- Right container: group details or message -->
+        <div class="right-container" id="rightContainer"></div>
+    </div>
+
+    <!-- Modal Overlay and Create Group Modal -->
+    <div class="modal-overlay" id="createGroupOverlay">
+        <div class="modal" id="createGroupModal">
+            <button class="close-modal-btn" onclick="closeCreateGroupModal()">×</button>
+            <h2>Create New Group</h2>
+            <div class="photo-upload-container">
+                <!-- Person icon in circular container -->
+                <img id="groupPhotoIcon"
+                    src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij48Y2lyY2xlIGN4PSIyNCIgY3k9IjE2IiByPSIxMCIgZmlsbD0iI2NjYyIvPjxwYXRoIGQ9Ik0yNCAyM2M5LjIgMCAxNyAxLjggMTcgNXYyaC0zNGMwLTIuMiA3LjgtNSAyLTUiIGZpbGw9IiNjY2MiLz48L3N2Zz4="
+                    alt="Upload Photo" onclick="triggerPhotoInput()" />
+                <input type="file" id="groupPhotoInput" accept="image/*" />
+            </div>
+
+            <label for="modalGroupName">Group Name:</label>
+            <input type="text" id="modalGroupName" placeholder="Group Name" />
+
+            <label for="modalGroupType">Group Type:</label>
+            <select id="modalGroupType">
+                <option value="Trip">Trip</option>
+                <option value="Home">Home</option>
+                <option value="Friends">Friends</option>
+                <option value="Other">Other</option>
+            </select>
+
+            <div class="button-container">
+                <button onclick="createGroupFromModal()">Create Group</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Overlay and Add Member Modal -->
+    <div class="modal-overlay" id="addMemberOverlay">
+        <div class="modal" id="addMemberModal">
+            <button class="close-modal-btn" onclick="closeAddMemberModal()">×</button>
+            <h2>Add Member</h2>
+            <label for="addMemberNameInput">Member Name:</label>
+            <input type="text" id="addMemberNameInput" placeholder="Enter member name" />
+            <div class="button-container">
+                <button onclick="addMemberFromModal()">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ---------- Global Variables ---------- */
+        let groups = [];
+        let selectedGroupIndex = -1;
+        let newGroupPhoto = "";
+
+        // For the "Add Member" modal
+        let addMemberGroupIndex = -1;
+
+        /* ---------- Initialization and Data Loading ---------- */
+        function init() {
+            loadGroups();
+            // If we have at least one group, show the first group by default
+            if (groups.length > 0 && selectedGroupIndex === -1) {
+                selectedGroupIndex = 0;
+            }
+            render();
+            setupPhotoInputListener();
+        }
+        window.onload = init;
+
+        // Load groups from local storage
+        function loadGroups() {
+            const stored = localStorage.getItem("expenseSplitterGroups");
+            groups = stored ? JSON.parse(stored) : [];
+        }
+
+        // Save groups to local storage
+        function saveGroups() {
+            localStorage.setItem("expenseSplitterGroups", JSON.stringify(groups));
+        }
+
+        /* ---------- Rendering ---------- */
+        function render() {
+            renderGroupsList();
+            renderRightContainer();
+        }
+
+        // Render the list of groups in the left container
+        function renderGroupsList() {
+            const groupsListDiv = document.getElementById("groupsList");
+            const groupsHeader = document.getElementById("groupsHeader");
+            groupsListDiv.innerHTML = "";
+            groupsHeader.innerHTML = "";
+
+            // Only display "Groups" label if at least one group exists
+            if (groups.length > 0) {
+                groupsHeader.innerHTML = "<h2>Groups</h2>";
+            }
+
+            groups.forEach((group, index) => {
+                const groupDiv = document.createElement("div");
+                groupDiv.className = "group-item";
+                groupDiv.onclick = () => selectGroup(index);
+
+                let thumbSrc = group.photo
+                    ? group.photo
+                    : "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nNDAnIGhlaWdodD0nNDAnIHZpZXdCb3g9JzAgMCA0MCA0MCcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJz48cmVjdCB3aWR0aD0nNDAnIGhlaWdodD0nNDAnIGZpbGw9JyNlZWUnLz48dGV4dCB4PScyMCcgeT0nMjAnIGR5PScuMycgZm9udC1zaXplPSc4JyB0ZXh0LWFuY2hvcj0nbWlkZGxlJyBmaWxsPScjOTk5JyBmb250LWZhbWlseT0nQXJpYWwnPj88L3RleHQ+PC9zdmc+";
+                groupDiv.innerHTML = `
+                    <img class="group-photo-thumb" src="${thumbSrc}" alt="Group Photo"/>
+                    <div>
+                        <strong>${group.name}</strong><br/>
+                        <small>${group.type}</small>
+                    </div>
+                `;
+                groupsListDiv.appendChild(groupDiv);
+            });
+        }
+
+        // Select a group
+        function selectGroup(index) {
+            selectedGroupIndex = index;
+            render();
+        }
+
+        // Render right container (group details or placeholder)
+        function renderRightContainer() {
+            const rightContainer = document.getElementById("rightContainer");
+            rightContainer.innerHTML = "";
+
+            // If no groups at all, show a simple message
+            if (groups.length === 0) {
+                rightContainer.innerHTML = `
+                    <h2>No Groups Yet</h2>
+                    <p>Please create a group using the button on the left.</p>
+                `;
+                return;
+            }
+
+            // If there is at least one group, but none selected
+            if (selectedGroupIndex === -1 && groups.length > 0) {
+                selectedGroupIndex = 0;
+            }
+
+            const group = groups[selectedGroupIndex];
+            const groupDetailsDiv = document.createElement("div");
+
+            // Header: photo, name, type badge, icons in top-right
+            const headerDiv = document.createElement("div");
+            headerDiv.className = "group-detail-header";
+
+            const photoSrc = group.photo ||
+                "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nNjAnIGhlaWdodD0nNjAnIHZpZXdCb3g9JzAgMCA2MCA2MCcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJz48cmVjdCB3aWR0aD0nNjAnIGhlaWdodD0nNjAnIGZpbGw9JyNlZWUnLz48dGV4dCB4PSczMCcgeT0nMzAnIGR5PScuMycgZm9udC1zaXplPScxMScgdGV4dC1hbmNob3I9J21pZGRsZScgZmlsbD0nIzAwMCcgZm9udC1mYW1pbHk9J0FyaWFsJyA+PzwvdGV4dD48L3N2Zz4=";
+
+            // Display members in one line, separated by commas
+            const membersLine = group.members.join(", ");
+
+            headerDiv.innerHTML = `
+                <img src="${photoSrc}" alt="Group Photo" />
+                <div>
+                    <h2>${group.name}
+                        <span class="group-type-badge">${group.type}</span>
+                    </h2>
+                    <div class="members-line">
+                        ${membersLine}
+                    </div>
+                </div>
+                <div class="icon-buttons">
+                    <!-- Add member icon button -->
+                    <button class="icon-button" onclick="openAddMemberModal(${selectedGroupIndex})" title="Add Member">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6z"/>
+                        </svg>
+                    </button>
+                    <!-- Delete group icon button -->
+                    <button class="icon-button" onclick="deleteGroup(${selectedGroupIndex})" title="Delete Group">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M9 3v1H4v2h16V4h-5V3H9zm-3 6v12c0 1.103.897 2 2 2h8c1.103 0 2-.897 2-2V9H6z"/>
+                        </svg>
+                    </button>
+                </div>
+            `;
+            groupDetailsDiv.appendChild(headerDiv);
+
+            // Only show Add Expense section if there are at least 2 members
+            if (group.members.length >= 2) {
+                const addExpenseSection = document.createElement("div");
+                addExpenseSection.className = "section";
+
+                // Build the payer select
+                let payerOptions = "";
+                group.members.forEach((m, i) => {
+                    payerOptions += `<option value="${i}">${m}</option>`;
+                });
+
+                // Build custom share inputs
+                let customSharesHTML = "";
+                for (let i = 0; i < group.members.length; i++) {
+                    customSharesHTML += `
+                        <label>${group.members[i]}:
+                            <input type="number" id="customShare_${i}" step="0.01" style="width:70px;" />
+                        </label><br/>
+                    `;
+                }
+
+                // Build percent share inputs
+                let percentSharesHTML = "";
+                for (let i = 0; i < group.members.length; i++) {
+                    percentSharesHTML += `
+                        <label>${group.members[i]} (%):
+                            <input type="number" id="percentShare_${i}" step="0.01" style="width:70px;" />
+                        </label><br/>
+                    `;
+                }
+
+                addExpenseSection.innerHTML = `
+                    <h4>Add Expense</h4>
+                    <label>Payer:
+                        <select id="payerSelect">
+                            ${payerOptions}
+                        </select>
+                    </label>
+                    <label>Amount (integer):
+                        <input type="number" id="expenseAmount" step="1" min="1" style="width:100px;" />
+                    </label>
+                    <div>
+                        <label>
+                            <input type="radio" name="splitType" id="splitTypeEqual" value="equal" checked
+                                onclick="toggleCustomShares()" />
+                            Split Equally
+                        </label>
+                        <label>
+                            <input type="radio" name="splitType" id="splitTypeCustom" value="custom"
+                                onclick="toggleCustomShares()" />
+                            Split Custom
+                        </label>
+                        <label>
+                            <input type="radio" name="splitType" id="splitTypePercent" value="percent"
+                                onclick="toggleCustomShares()" />
+                            Split by Percentage
+                        </label>
+                    </div>
+                    <div id="customSharesContainer" style="display:none; margin-top:5px;">
+                        ${customSharesHTML}
+                    </div>
+                    <div id="percentSharesContainer" style="display:none; margin-top:5px;">
+                        ${percentSharesHTML}
+                    </div>
+                    <button style="margin-top:5px;" onclick="addExpense(${selectedGroupIndex})">Add Expense</button>
+                `;
+                groupDetailsDiv.appendChild(addExpenseSection);
+            }
+
+            // Balances and debts (only if there's at least one member)
+            if (group.members.length > 0) {
+                const balancesDiv = document.createElement("div");
+                balancesDiv.className = "balances";
+                balancesDiv.innerHTML = "<h4>Net Balances</h4>";
+                let balancesList = "<ul>";
+                group.balances.forEach((b, i) => {
+                    const formatted = b.toFixed(2);
+                    if (Math.abs(b) < 0.001) {
+                        balancesList += `<li><strong>${group.members[i]}:</strong> $0.00</li>`;
+                    } else if (b > 0) {
+                        balancesList += `<li><strong>${group.members[i]}:</strong> +$${formatted} (is owed)</li>`;
+                    } else {
+                        balancesList += `<li><strong>${group.members[i]}:</strong> -$${Math.abs(b).toFixed(2)} (owes)</li>`;
+                    }
+                });
+                balancesList += "</ul>";
+                balancesDiv.innerHTML += balancesList;
+                groupDetailsDiv.appendChild(balancesDiv);
+
+                // Debts
+                const debtsArray = calculateDebts(group.balances);
+                if (debtsArray.length > 0) {
+                    const debtsDiv = document.createElement("div");
+                    debtsDiv.className = "debts";
+                    debtsDiv.innerHTML = "<h4>Who Owes Whom</h4>";
+                    let debtsHTML = "<ul>";
+                    debtsArray.forEach(d => {
+                        debtsHTML += `<li>${group.members[d.from]} owes ${group.members[d.to]} $${d.amount.toFixed(2)}</li>`;
+                    });
+                    debtsHTML += "</ul>";
+                    debtsDiv.innerHTML += debtsHTML;
+                    groupDetailsDiv.appendChild(debtsDiv);
+                }
+            }
+
+            rightContainer.appendChild(groupDetailsDiv);
+        }
+
+        /* ---------- Modal Handling: Create Group ---------- */
+        function openCreateGroupModal() {
+            document.getElementById("createGroupOverlay").style.display = "flex";
+        }
+        function closeCreateGroupModal() {
+            document.getElementById("createGroupOverlay").style.display = "none";
+            resetCreateGroupModalFields();
+        }
+        function resetCreateGroupModalFields() {
+            document.getElementById("modalGroupName").value = "";
+            document.getElementById("modalGroupType").value = "Trip";
+            newGroupPhoto = "";
+            document.getElementById("groupPhotoIcon").src =
+                "data:image/svg+xml;base64,PHN2ZyBmaWxsPSIjN2E3YTdhIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiB3aWR0aD0iNjQiIGhlaWdodD0iNjQiPjxwYXRoIGQ9Ik0zNzAgMTEySDE0MGMtMTcuNyAwLTMxIDE0LjMtMzEgMzF2MjI2YzAgMTcuNyAxNC4zIDMxIDMxIDMxaDIzMmMxNy43IDAgMzEtMTQuMyAzMS0zMVYxNDNjMC0xNy43LTE0LjMtMzEtMzEtMzF6TTI1NiAxNzZjNDguNiAwIDg4LTM5LjQgODgtODhzMzkuNC04OCA4OC04OHM4OCAzOS40IDg4IDg4LTAgODgtODggODgtODggMzkuNC04OCA4OHptMCAyNThjLTI4LjYgMC01Ni44LTguOS03OS44LTI1LjdsMTEuMi0xOC44YzguOC0xNC4xIDI3LjktMTguNCA0MS44LTkuNyAxMi41IDguNSAyOC45IDguNSA0MS40IDAgMTMuOS04LjQgMzIuOS0xOC41IDQxLjgtMTEuMSA3LjMtMjYuMyA3LjgtMzkuMiAwLTMuNy0yLjUtNi44LTYuMi03LjktMTAuMmwtMTAuNi0yM2MtNi4xLTEzLjUgMS0yOS40IDE0LjUtMzUuNCAzMy41LTE0LjcgNzAuOS0xNC43IDExNC40IDAgMTMuNSA1LjkgMjkuNS0xLjUgMzUuNi0xNC44bDEwLjYtMjNjMS4xLTIuNSAzLjItNC41IDUuNy01LjYgMTIuOS01LjIgMjcuOS01LjggMzkuMi0xIDExIDcuOSA3LjUgMjYuOSAxOC41IDQwLjggMjkuNCAxMi41IDguNSA4LjkgMjcuNSAxLjUgMzUuNi0xNC44bC0xMS4yLTE4LjhjLTIuOC00LjUtMi4yLTEwLjEgMS42LTE0LjEgMTcuNC0yMS44IDQyLjgtMzQuNiA2OS43LTM5LjEgMy45LS43IDguMS0uMyAxMS44IDEuNCAxMy41IDUuOCAxOS4zIDIxLjUgMTMuNyAzNS4xbC0xMC42IDIzYy0xLjEgMi41LTMuMiA0LjUtNS43IDUuNi0xMi45IDUuMi0yNy45IDUuOC0zOS4yIDEgLTEwLjEtNS4zLTE2LjUtMTYuOC0xNC44LTI3LjYgNC4yLTI4LjIgMjMuMi0zNS44IDM2LjgtNy45IDEyLjctMjIuNSAxOS44LTM2LjggMTkuOHoiIC8+PC9zdmc+";
+        }
+
+        // Create group from modal
+        function createGroupFromModal() {
+            const nameInput = document.getElementById("modalGroupName");
+            const typeSelect = document.getElementById("modalGroupType");
+
+            const groupName = nameInput.value.trim();
+            const groupType = typeSelect.value;
+
+            if (!groupName) {
+                alert("Please enter a valid group name.");
+                return;
+            }
+
+            const newGroup = {
+                name: groupName,
+                type: groupType,
+                photo: newGroupPhoto || "",
+                members: [],
+                expenses: [],
+                balances: []
+            };
+
+            groups.push(newGroup);
+            saveGroups();
+            selectedGroupIndex = groups.length - 1;
+
+            closeCreateGroupModal();
+            render();
+        }
+
+        // Clicking the photo icon triggers the hidden file input
+        function triggerPhotoInput() {
+            document.getElementById("groupPhotoInput").click();
+        }
+
+        // Set up listener for file input changes (to convert image to base64)
+        function setupPhotoInputListener() {
+            const photoInput = document.getElementById("groupPhotoInput");
+            photoInput.addEventListener("change", function (event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    newGroupPhoto = e.target.result;
+                    document.getElementById("groupPhotoIcon").src = newGroupPhoto;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        /* ---------- Modal Handling: Add Member ---------- */
+        function openAddMemberModal(groupIndex) {
+            addMemberGroupIndex = groupIndex;
+            document.getElementById("addMemberNameInput").value = "";
+            document.getElementById("addMemberOverlay").style.display = "flex";
+        }
+        function closeAddMemberModal() {
+            document.getElementById("addMemberOverlay").style.display = "none";
+        }
+        function addMemberFromModal() {
+            const memberNameInput = document.getElementById("addMemberNameInput");
+            const memberName = memberNameInput.value.trim();
+            if (!memberName) {
+                alert("Please enter a valid member name.");
+                return;
+            }
+            addMemberToGroup(addMemberGroupIndex, memberName);
+            closeAddMemberModal();
+        }
+
+        // Actually add the member to the group
+        function addMemberToGroup(groupIndex, name) {
+            const group = groups[groupIndex];
+            group.members.push(name);
+            group.balances.push(0);
+            saveGroups();
+            render();
+        }
+
+        /* ---------- Group Operations ---------- */
+        // Delete a group
+        function deleteGroup(index) {
+            if (!confirm("Are you sure you want to delete this group?")) return;
+            groups.splice(index, 1);
+            saveGroups();
+            // If no groups remain, reset selection
+            if (groups.length === 0) {
+                selectedGroupIndex = -1;
+            } else if (index <= selectedGroupIndex && selectedGroupIndex > 0) {
+                // Adjust selected index if we removed a group before or at the selected index
+                selectedGroupIndex--;
+            }
+            render();
+        }
+
+        // Toggle among equal, custom, or percent shares
+        function toggleCustomShares() {
+            const splitTypeEqual = document.getElementById("splitTypeEqual");
+            const splitTypeCustom = document.getElementById("splitTypeCustom");
+            const splitTypePercent = document.getElementById("splitTypePercent");
+
+            const customSharesContainer = document.getElementById("customSharesContainer");
+            const percentSharesContainer = document.getElementById("percentSharesContainer");
+
+            // Hide both by default
+            customSharesContainer.style.display = "none";
+            percentSharesContainer.style.display = "none";
+
+            if (splitTypeCustom.checked) {
+                customSharesContainer.style.display = "block";
+            } else if (splitTypePercent.checked) {
+                percentSharesContainer.style.display = "block";
+            }
+        }
+
+        // Add an expense
+        function addExpense(groupIndex) {
+            const group = groups[groupIndex];
+            const payerSelect = document.getElementById("payerSelect");
+            const amountInput = document.getElementById("expenseAmount");
+            const splitTypeEqual = document.getElementById("splitTypeEqual");
+            const splitTypeCustom = document.getElementById("splitTypeCustom");
+            const splitTypePercent = document.getElementById("splitTypePercent");
+
+            const payer = parseInt(payerSelect.value, 10);
+            const amount = parseInt(amountInput.value, 10); // must be an integer
+            if (isNaN(amount) || amount <= 0) {
+                alert("Please enter a valid integer expense amount.");
+                return;
+            }
+
+            let shares = new Array(group.members.length).fill(0);
+
+            if (splitTypeEqual.checked) {
+                // Split equally
+                const eachShare = amount / group.members.length;
+                // For integer amounts, each share might be fractional
+                for (let i = 0; i < shares.length; i++) {
+                    shares[i] = eachShare;
+                }
+            } else if (splitTypeCustom.checked) {
+                // Split custom
+                let totalCustom = 0;
+                for (let i = 0; i < group.members.length; i++) {
+                    const shareInput = document.getElementById(`customShare_${i}`);
+                    const val = parseFloat(shareInput.value) || 0;
+                    shares[i] = val;
+                    totalCustom += val;
+                }
+                // Warn if sum doesn't match
+                if (Math.abs(totalCustom - amount) > 0.001) {
+                    if (!confirm("The sum of custom shares does not match the total. Proceed anyway?")) {
+                        return;
+                    }
+                }
+            } else if (splitTypePercent.checked) {
+                // Split by percentage
+                let totalPercent = 0;
+                for (let i = 0; i < group.members.length; i++) {
+                    const percentInput = document.getElementById(`percentShare_${i}`);
+                    const val = parseFloat(percentInput.value) || 0;
+                    totalPercent += val;
+                }
+                // Typically we want totalPercent to be 100
+                if (Math.abs(totalPercent - 100) > 0.001) {
+                    if (!confirm("The sum of all percentages is not 100. Proceed anyway?")) {
+                        // if user cancels, do nothing
+                        return;
+                    }
+                }
+                // Now calculate actual shares
+                for (let i = 0; i < group.members.length; i++) {
+                    const val = parseFloat(document.getElementById(`percentShare_${i}`).value) || 0;
+                    shares[i] = (val / 100) * amount;
+                }
+            }
+
+            // Add the expense
+            group.expenses.push({
+                payer: payer,
+                amount: amount,
+                shares: shares
+            });
+
+            // Clear the input
+            amountInput.value = "";
+            updateBalances(groupIndex);
+            saveGroups();
+            render();
+        }
+
+        // Update balances based on all expenses
+        function updateBalances(groupIndex) {
+            const group = groups[groupIndex];
+            group.balances = new Array(group.members.length).fill(0);
+
+            group.expenses.forEach(expense => {
+                const { payer, shares } = expense;
+                for (let i = 0; i < shares.length; i++) {
+                    group.balances[i] -= shares[i];
+                    group.balances[payer] += shares[i];
+                }
+            });
+        }
+
+        // Calculate debts
+        function calculateDebts(balances) {
+            let debts = [];
+            let pos = [];
+            let neg = [];
+
+            for (let i = 0; i < balances.length; i++) {
+                if (balances[i] > 0) {
+                    pos.push({ member: i, amount: balances[i] });
+                } else if (balances[i] < 0) {
+                    neg.push({ member: i, amount: balances[i] });
+                }
+            }
+
+            let pIndex = 0;
+            let nIndex = 0;
+            while (pIndex < pos.length && nIndex < neg.length) {
+                const canPay = Math.min(pos[pIndex].amount, -neg[nIndex].amount);
+                debts.push({
+                    from: neg[nIndex].member,
+                    to: pos[pIndex].member,
+                    amount: canPay
+                });
+                pos[pIndex].amount -= canPay;
+                neg[nIndex].amount += canPay;
+
+                if (Math.abs(pos[pIndex].amount) < 0.0001) {
+                    pIndex++;
+                }
+                if (Math.abs(neg[nIndex].amount) < 0.0001) {
+                    nIndex++;
+                }
+            }
+
+            return debts;
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>X's & O's</title>
+  <!-- Include the Moon Dance font from Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Moon+Dance&display=swap" rel="stylesheet">
+  <style>
+    /* Overall page styling: no gradients, simple background */
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      background: linear-gradient(135deg, #555555, #d4d2d2);
+      font-family: Arial, sans-serif;
+    }
+
+    /* Main title in Moon Dance font */
+    h1 {
+      text-align: center;
+      margin: 20px 0;
+      font-size: 3em;
+      color: #333;
+      font-family: 'Moon Dance', cursive;
+    }
+
+    /* Container with a simpler background (no gradient) */
+    #container {
+      width: 450px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, #414040, #aaa9a9);
+      border-radius: 15px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+      padding: 20px;
+      text-align: center;
+      position: relative;
+      min-height: 450px;
+    }
+
+    /* Menu shown at the start */
+    #menu {
+      color: #ffffff;
+      margin-top: 30px;
+    }
+
+    #menu p {
+      font-size: 1.2em;
+    }
+
+    /* The area that holds the actual game (hidden by default) */
+    #gameArea {
+      display: none;
+      margin-top: 2px;
+      color: #ffffff;
+    }
+
+    /* Top bar with round info and current player side by side */
+    #topBar {
+      display: flex;
+      justify-content: space-between;
+      margin: 0 25px;
+      margin-bottom: 60px;
+      align-items: center;
+    }
+
+    #roundInfo,
+    #playerInfo {
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+
+    /* Game board grid */
+    #gameBoard {
+      display: grid;
+      opacity: 0.4;
+      grid-template-columns: repeat(3, 90px);
+      grid-template-rows: repeat(3, 90px);
+      gap: 10px;
+      margin: 20px auto;
+      width: 310px;
+      /* 3 cells * 90px + 2 gaps * 10px */
+    }
+
+    /* Individual cells: white with opacity, rounded corners */
+    .cell {
+      background: rgba(255, 255, 255, 0.8);
+      font-size: 60px;
+      text-align: center;
+      line-height: 90px;
+      cursor: pointer;
+      border: 2px solid #ddd;
+      border-radius: 15px;
+      transition: background 0.2s;
+      color: #333;
+    }
+
+    /* Hover effect on cells */
+    .cell:hover {
+      background: rgba(255, 255, 255, 1);
+    }
+
+    /* Message area below the board */
+    #message {
+      margin-top: 10px;
+      font-size: 1.2em;
+      min-height: 30px;
+    }
+
+    /* Undo button area below the grid (shown for 3 seconds if the player has an undo) */
+    #undoArea {
+      display: none;
+      margin-top: 10px;
+    }
+
+    /* Final result area (shown after all 3 rounds) */
+    #finalResult {
+      display: none;
+      margin-top: 40px;
+      color: #ffffff;
+    }
+
+    /* Button styling */
+    button {
+      cursor: pointer;
+      margin: 10px 5px;
+      padding: 6px 12px;
+      font-size: 1em;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    /* Radio input styling */
+    input[type="radio"] {
+      margin-left: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>X's & O's</h1>
+
+  <div id="container">
+    <!-- Menu shown at the start -->
+    <div id="menu">
+      <p>Select one option to start the game:</p>
+      <label>
+        <input type="radio" name="mode" value="2p" checked>
+        Two Players
+      </label>
+      <label>
+        <input type="radio" name="mode" value="ai">
+        User vs. Computer
+      </label>
+      <br><br>
+      <button onclick="startGame()">Start Game</button>
+    </div>
+
+    <!-- Actual game area, hidden until the user starts -->
+    <div id="gameArea">
+      <div id="topBar">
+        <div id="roundInfo">Round: <span id="roundNum">1</span> / 3</div>
+        <div id="playerInfo">Current Player: <span id="currentPlayerLabel">X</span></div>
+      </div>
+
+      <div id="gameBoard">
+        <div class="cell" onclick="handleCellClick(0)"></div>
+        <div class="cell" onclick="handleCellClick(1)"></div>
+        <div class="cell" onclick="handleCellClick(2)"></div>
+        <div class="cell" onclick="handleCellClick(3)"></div>
+        <div class="cell" onclick="handleCellClick(4)"></div>
+        <div class="cell" onclick="handleCellClick(5)"></div>
+        <div class="cell" onclick="handleCellClick(6)"></div>
+        <div class="cell" onclick="handleCellClick(7)"></div>
+        <div class="cell" onclick="handleCellClick(8)"></div>
+      </div>
+
+      <!-- Undo area: shown for 3 seconds if the player has an undo -->
+      <div id="undoArea">
+        <button id="undoBtn" onclick="undoLastMove()">Undo (<span id='undoCountdown'>3</span>)</button>
+      </div>
+
+      <div id="message"></div>
+    </div>
+
+    <!-- Final result screen (shown after all 3 rounds) -->
+    <div id="finalResult">
+      <h2 id="finalMessage"></h2>
+      <p>Select one option to play again:</p>
+      <label>
+        <input type="radio" name="modeAgain" value="2p" checked>
+        Two Players
+      </label>
+      <label>
+        <input type="radio" name="modeAgain" value="ai">
+        User vs. Computer
+      </label>
+      <br><br>
+      <button onclick="playAgain()">Play Again</button>
+    </div>
+  </div>
+
+  <script>
+    // Global game variables
+    let board = ["", "", "", "", "", "", "", "", ""];
+    let currentPlayer = "X";
+    let roundCount = 1;
+    let player1Score = 0;
+    let player2Score = 0;
+    let gameMode = "2p"; // "2p" or "ai"
+
+    let gameOver = false;          // Are we done with the current round?
+    let lastMoveIndex = null;      // Track the last move for potential undo
+
+    // Undo availability: if X or O won the previous round, they get one undo in the next round.
+    // The computer never gets an undo even if it won. (Per user request.)
+    let undoAvailableX = false;
+    let undoAvailableO = false;    // Only used in 2p mode
+    let undoUsedThisRound = false; // Has the winner used their undo this round?
+
+    // Timer and countdown for the undo button
+    let undoTimer = null;
+    let undoSecondsLeft = 3;
+
+    // Start the game after user chooses a mode and clicks "Start Game"
+    function startGame() {
+      // Determine which mode is selected
+      const modeRadios = document.getElementsByName("mode");
+      for (let radio of modeRadios) {
+        if (radio.checked) {
+          gameMode = radio.value;
+          break;
+        }
+      }
+      // Hide the menu, show the game area
+      document.getElementById("menu").style.display = "none";
+      document.getElementById("gameArea").style.display = "block";
+
+      initGame();
+    }
+
+    // Initialize a 3-round session
+    function initGame() {
+      player1Score = 0;
+      player2Score = 0;
+      roundCount = 1;
+
+      // Initially, no one has an undo from a previous round
+      undoAvailableX = false;
+      undoAvailableO = false;
+
+      startRound();
+    }
+
+    // Set up a round
+    function startRound() {
+      gameOver = false;
+      undoUsedThisRound = false;
+      currentPlayer = "X";
+      lastMoveIndex = null;
+
+      // Clear the board
+      board = ["", "", "", "", "", "", "", "", ""];
+      const cells = document.querySelectorAll(".cell");
+      cells.forEach(cell => (cell.textContent = ""));
+
+      // Update UI
+      document.getElementById("roundNum").textContent = roundCount;
+      document.getElementById("currentPlayerLabel").textContent = currentPlayer;
+      document.getElementById("message").textContent = "";
+      hideUndoArea();
+
+      // No move is placed yet, so no timer is active
+      if (undoTimer) {
+        clearInterval(undoTimer);
+        undoTimer = null;
+      }
+    }
+
+    // Called when a cell is clicked
+    function handleCellClick(index) {
+      if (gameOver) return;            // No action if round is over
+      if (board[index] !== "") return; // Ignore clicks on filled cells
+
+      if (undoTimer) {
+        clearInterval(undoTimer);
+        undoTimer = null;
+        hideUndoArea();
+        finalizeMove();
+        return;
+      }
+
+      // Place the current player's mark
+      board[index] = currentPlayer;
+      document.querySelectorAll(".cell")[index].textContent = currentPlayer;
+      lastMoveIndex = index;
+
+      // If the current player has an undo available and hasn't used it, show the undo button
+      if (canUseUndo()) {
+        showUndoCountdown();
+      } else {
+        // If no undo is available, finalize the move immediately
+        finalizeMove();
+      }
+    }
+
+    // Check if the current player can use an undo
+    function canUseUndo() {
+      if (currentPlayer === "X" && undoAvailableX && !undoUsedThisRound) {
+        return true;
+      }
+      // O can have undo only in 2p mode, not AI
+      if (currentPlayer === "O" && gameMode === "2p" && undoAvailableO && !undoUsedThisRound) {
+        return true;
+      }
+      return false;
+    }
+
+    // Start the 3-second countdown for the undo button
+    function showUndoCountdown() {
+      undoSecondsLeft = 3;
+      document.getElementById("undoArea").style.display = "block";
+      document.getElementById("undoCountdown").textContent = undoSecondsLeft;
+
+      undoTimer = setInterval(() => {
+        undoSecondsLeft--;
+        if (undoSecondsLeft <= 0) {
+          clearInterval(undoTimer);
+          undoTimer = null;
+          // Time is up; finalize the move
+          finalizeMove();
+        } else {
+          document.getElementById("undoCountdown").textContent = undoSecondsLeft;
+        }
+      }, 1000);
+    }
+
+    // If user clicks the Undo button within the 3-second window
+    function undoLastMove() {
+      clearInterval(undoTimer);
+      undoTimer = null;
+
+      // Revert the last move
+      if (lastMoveIndex !== null) {
+        board[lastMoveIndex] = "";
+        document.querySelectorAll(".cell")[lastMoveIndex].textContent = "";
+      }
+
+      // Mark that we've used our undo
+      undoUsedThisRound = true;
+      hideUndoArea();
+      lastMoveIndex = null;
+    }
+
+    // Hide the undo button area
+    function hideUndoArea() {
+      document.getElementById("undoArea").style.display = "none";
+      document.getElementById("undoCountdown").textContent = "3";
+    }
+
+    // Finalize the move (check winner/draw, toggle player or end round)
+    function finalizeMove() {
+      hideUndoArea();
+
+      const winner = checkWinner();
+      if (winner) {
+        endRound(winner);
+      } else if (boardFull()) {
+        endRound(null); // It's a draw
+      } else {
+        // No winner yet; switch player or let AI move
+        togglePlayer();
+        // If it's AI's turn, AI moves automatically
+        if (gameMode === "ai" && currentPlayer === "O" && !gameOver) {
+          setTimeout(computerMove, 500);
+        }
+      }
+    }
+
+    // Switch currentPlayer between 'X' and 'O'
+    function togglePlayer() {
+      currentPlayer = (currentPlayer === "X") ? "O" : "X";
+      document.getElementById("currentPlayerLabel").textContent = currentPlayer;
+    }
+
+    // Check if any row, column, or diagonal is fully 'X' or 'O'
+    function checkWinner() {
+      const winPatterns = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],  // rows
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],  // columns
+        [0, 4, 8], [2, 4, 6]           // diagonals
+      ];
+      for (let pattern of winPatterns) {
+        const [a, b, c] = pattern;
+        if (
+          board[a] !== "" &&
+          board[a] === board[b] &&
+          board[b] === board[c]
+        ) {
+          return board[a]; // 'X' or 'O'
+        }
+      }
+      return null;
+    }
+
+    // Check if the board is completely filled
+    function boardFull() {
+      return board.every(cell => cell !== "");
+    }
+
+    // End the current round with a given winner (or null for draw)
+    function endRound(winner) {
+      gameOver = true;
+
+      if (winner === "X") {
+        if (gameMode === "2p") {
+          player1Score++;
+          document.getElementById("message").textContent =
+            "Player 1 (X) wins this round!";
+        } else {
+          player1Score++;
+          document.getElementById("message").textContent =
+            "You (X) win this round!";
+        }
+        // X gets an undo in the next round
+        undoAvailableX = true;
+      }
+      else if (winner === "O") {
+        if (gameMode === "2p") {
+          player2Score++;
+          document.getElementById("message").textContent =
+            "Player 2 (O) wins this round!";
+          // O gets an undo in the next round (2p only)
+          undoAvailableO = true;
+        } else {
+          // Computer wins, no undo for the computer
+          player2Score++;
+          document.getElementById("message").textContent =
+            "Computer (O) wins this round!";
+
+          undoAvailableX = false;
+        }
+      }
+      else {
+        // Draw
+        document.getElementById("message").textContent =
+          "It's a draw this round!";
+      }
+
+      // Move to the next round or end the game if we've done 3 rounds
+      if (roundCount < 3) {
+        roundCount++;
+        setTimeout(() => {
+          startRound();
+        }, 2000);
+      } else {
+        // After 3 rounds, declare the overall winner
+        setTimeout(() => {
+          let finalMessage = "";
+          if (player1Score > player2Score) {
+            if (gameMode === "2p") {
+              finalMessage = "Player 1 (X) wins the entire game!";
+            } else {
+              finalMessage = "You (X) win the entire game!";
+            }
+          } else if (player2Score > player1Score) {
+            if (gameMode === "2p") {
+              finalMessage = "Player 2 (O) wins the entire game!";
+            } else {
+              finalMessage = "Computer (O) wins the entire game!";
+            }
+          } else {
+            finalMessage = "The game ends in a tie!";
+          }
+          endGame(finalMessage);
+        }, 2000);
+      }
+    }
+
+    // Show final result screen and hide the game area
+    function endGame(finalMessage) {
+      document.getElementById("gameArea").style.display = "none";
+      document.getElementById("finalResult").style.display = "block";
+      document.getElementById("finalMessage").textContent = finalMessage;
+    }
+
+    // Simple computer move: pick a random empty cell for 'O'
+    function computerMove() {
+      if (gameOver) return; // If the round ended, do nothing
+
+      let emptyIndices = [];
+      for (let i = 0; i < board.length; i++) {
+        if (board[i] === "") {
+          emptyIndices.push(i);
+        }
+      }
+      if (emptyIndices.length === 0) return;
+
+      let randIndex = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+      board[randIndex] = "O";
+      document.querySelectorAll(".cell")[randIndex].textContent = "O";
+      lastMoveIndex = randIndex;
+
+      // Computer never has an undo, so finalize immediately
+      finalizeMove();
+    }
+
+    // Reset everything and let user select mode again
+    function playAgain() {
+      // Determine which mode is selected from the finalResult screen
+      const modeRadios = document.getElementsByName("modeAgain");
+      for (let radio of modeRadios) {
+        if (radio.checked) {
+          gameMode = radio.value;
+          break;
+        }
+      }
+
+      // Hide final result
+      document.getElementById("finalResult").style.display = "none";
+      // Show the game area again
+      document.getElementById("gameArea").style.display = "block";
+
+      // Re-init everything
+      initGame();
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Photo Gallery</title>
+    <!-- Google Fonts: Moon Dance -->
+    <link href="https://fonts.googleapis.com/css2?family=Moon+Dance&display=swap" rel="stylesheet" />
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+        }
+
+        header {
+            position: relative;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        header h1 {
+            font-family: 'Moon Dance', cursive;
+            color: #ffc0cb;
+            /* Light pink color */
+            font-size: 3em;
+            margin: 0;
+        }
+
+        /* Upload button styling */
+        #uploadBtn {
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            background-color: #ffc0cb;
+            /* Light pink background */
+            border: 2px solid #c71585;
+            /* Dark pink outline */
+            color: #c71585;
+            /* Dark pink text color */
+            border-radius: 20px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #uploadBtn:hover {
+            background-color: #f7b6c7;
+            /* Slightly different pink on hover */
+        }
+
+        #uploadBtn svg {
+            width: 20px;
+            height: 20px;
+            fill: #c71585;
+            /* Dark pink fill color for the icon */
+        }
+
+        /* Gallery layout: masonry using CSS columns */
+        .gallery {
+            column-count: 4;
+            /* Adjust for more/fewer columns */
+            column-gap: 10px;
+            margin: 10px;
+        }
+
+        @media screen and (max-width: 800px) {
+            .gallery {
+                column-count: 2;
+            }
+        }
+
+        @media screen and (max-width: 500px) {
+            .gallery {
+                column-count: 1;
+            }
+        }
+
+        /* Container for each image */
+        .image-container {
+            position: relative;
+            display: block;
+            margin-bottom: 10px;
+            break-inside: avoid;
+            /* Prevent splitting between columns */
+        }
+
+        .image-container img {
+            width: 100%;
+            display: block;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+            transition: filter 0.3s;
+        }
+
+        /* On hover, blur the image and show icons */
+        .image-container:hover img {
+            filter: blur(3px);
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .image-container:hover .overlay {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Icons in the top-right corner */
+        .icons {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Modal overlay for upload, delete confirmation, etc. */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #c71585;
+        }
+
+        .modal-content p {
+            margin-bottom: 15px;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .modal-content button {
+            background-color: #ffc0cb;
+            border: 2px solid #c71585;
+            color: #c71585;
+            border-radius: 20px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 0 5px;
+        }
+
+        .modal-content button:hover {
+            background-color: #f7b6c7;
+        }
+
+        /* Lightbox modal for viewing images */
+        #lightboxModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        #lightboxModal img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+        }
+
+        /* Lightbox navigation icons */
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            transform: translateY(-50%);
+        }
+
+        .lightbox-nav svg {
+            fill: #fff;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+
+        .lightbox-nav svg:hover {
+            opacity: 1;
+        }
+
+        /* Close icon at top-right */
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            cursor: pointer;
+        }
+
+        .lightbox-close svg {
+            fill: #fff;
+            width: 30px;
+            height: 30px;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+
+        .lightbox-close svg:hover {
+            opacity: 1;
+        }
+
+        /* Error message inside upload modal */
+        #uploadError {
+            color: red;
+            margin-bottom: 15px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Photo Gallery</h1>
+        <!-- Button with an SVG icon that looks like a picture + plus -->
+        <button id="uploadBtn">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M10 3H5c-1.1 0-2 .9-2 2v3h2V5h5l1.83 2H14c1.1 0 2 .9 2 2v1h2V9c0-2.21-1.79-4-4-4h-1.17L10 3zM19 10v9H5v-9H3v9c0 1.1.9 2 2 2h14c1.1 
+                0 2-.9 2-2v-9h-2zM12 12c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zM21 5h-2V3h-2v2h-2v2h2v2h2V7h2z" />
+            </svg>
+            Upload
+        </button>
+    </header>
+
+    <!-- The gallery (initially empty, will be populated by JS) -->
+    <div class="gallery" id="gallery"></div>
+
+    <!-- Modal for uploading a new image URL -->
+    <div class="modal-overlay" id="uploadModal">
+        <div class="modal-content">
+            <h2>Upload a .jpeg Image</h2>
+            <p id="uploadError"></p>
+            <input type="text" id="uploadUrl" placeholder="Enter the URL of the .jpeg image" />
+            <div>
+                <button id="uploadOk">OK</button>
+                <button id="uploadCancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for confirming deletion -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal-content">
+            <h2>Confirm Deletion</h2>
+            <p>Are you sure you want to delete this image?</p>
+            <div>
+                <button id="deleteYes">Yes</button>
+                <button id="deleteNo">No</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox modal for viewing images -->
+    <div id="lightboxModal">
+        <div class="lightbox-nav">
+            <!-- Previous icon -->
+            <svg id="prevBtn" viewBox="0 0 24 24">
+                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+            </svg>
+            <!-- Next icon -->
+            <svg id="nextBtn" viewBox="0 0 24 24">
+                <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z" />
+            </svg>
+        </div>
+        <img id="lightboxImg" src="" alt="Full View" />
+        <!-- Close icon -->
+        <div class="lightbox-close" id="closeLightbox">
+            <svg viewBox="0 0 24 24">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5
+          5 6.41 10.59 12 5 17.59
+          6.41 19 12 13.41 17.59
+          19 19 17.59 13.41 12z" />
+            </svg>
+        </div>
+    </div>
+
+    <script>
+        // Default images
+        const defaultImages = [
+            "https://images.pexels.com/photos/1585325/pexels-photo-1585325.jpeg",
+            "https://images.pexels.com/photos/1509534/pexels-photo-1509534.jpeg",
+            "https://images.pexels.com/photos/1193743/pexels-photo-1193743.jpeg",
+            "https://images.pexels.com/photos/2086361/pexels-photo-2086361.jpeg",
+            "https://images.pexels.com/photos/1183992/pexels-photo-1183992.jpeg",
+            "https://images.pexels.com/photos/1234853/pexels-photo-1234853.jpeg",
+            "https://images.pexels.com/photos/1266808/pexels-photo-1266808.jpeg",
+            "https://images.pexels.com/photos/933967/pexels-photo-933967.jpeg"
+        ];
+
+        // The main array of image URLs
+        let galleryItems = [];
+
+        // Attempt to load from localStorage
+        const stored = localStorage.getItem("galleryImages");
+        if (stored) {
+            galleryItems = JSON.parse(stored);
+        } else {
+            // If nothing stored, use default images
+            galleryItems = defaultImages.slice();
+            localStorage.setItem("galleryImages", JSON.stringify(galleryItems));
+        }
+
+        // References to modals and controls
+        const gallery = document.getElementById('gallery');
+        const uploadModal = document.getElementById('uploadModal');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const uploadOk = document.getElementById('uploadOk');
+        const uploadCancel = document.getElementById('uploadCancel');
+        const uploadUrl = document.getElementById('uploadUrl');
+        const uploadError = document.getElementById('uploadError');
+
+        const deleteModal = document.getElementById('deleteModal');
+        const deleteYes = document.getElementById('deleteYes');
+        const deleteNo = document.getElementById('deleteNo');
+
+        const lightboxModal = document.getElementById('lightboxModal');
+        const lightboxImg = document.getElementById('lightboxImg');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const closeLightbox = document.getElementById('closeLightbox');
+
+        let currentIndex = 0;      // For the lightbox
+        let deleteIndex = null;    // For confirming deletion
+
+        // Icon paths for open (fullscreen) and delete
+        const fullscreenPath = "M7 14H5v5h5v-2H7v-3zm12 5h-3v2h5v-5h-2v3zM7 5h3V3H5v5h2V5zm10 0h3v3h2V3h-5v2z";
+        const deletePath = "M15 4V3H9v1H4v2h16V4h-5zm-7 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V9H8v13z";
+
+        // Utility to create an SVG icon
+        function createSvgIcon(pathData, fillColor = "#fff") {
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("viewBox", "0 0 24 24");
+            svg.style.width = "24px";
+            svg.style.height = "24px";
+            svg.style.fill = fillColor;
+            svg.style.marginLeft = "8px";
+            svg.style.cursor = "pointer";
+
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("d", pathData);
+
+            svg.appendChild(path);
+            return svg;
+        }
+
+        // Render the gallery from galleryItems array
+        function renderGallery() {
+            // Clear the gallery
+            gallery.innerHTML = '';
+
+            // Create a container for each image
+            galleryItems.forEach((src, index) => {
+                const container = document.createElement('div');
+                container.classList.add('image-container');
+
+                const img = document.createElement('img');
+                img.src = src;
+
+                const overlay = document.createElement('div');
+                overlay.classList.add('overlay');
+
+                const iconsDiv = document.createElement('div');
+                iconsDiv.classList.add('icons');
+
+                // Create open icon
+                const openIcon = createSvgIcon(fullscreenPath, "#fff");
+                openIcon.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openLightbox(index);
+                });
+
+                // Create delete icon
+                const delIcon = createSvgIcon(deletePath, "#fff");
+                delIcon.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openDeleteModal(index);
+                });
+
+                iconsDiv.appendChild(openIcon);
+                iconsDiv.appendChild(delIcon);
+
+                container.appendChild(img);
+                container.appendChild(overlay);
+                overlay.appendChild(iconsDiv);
+
+                gallery.appendChild(container);
+            });
+        }
+
+        // Open the upload modal
+        uploadBtn.addEventListener('click', () => {
+            uploadModal.style.display = 'flex';
+            uploadError.style.display = 'none';
+            uploadError.textContent = '';
+            uploadUrl.value = '';
+            uploadUrl.focus();
+        });
+
+        // Close the upload modal
+        function closeUploadModal() {
+            uploadModal.style.display = 'none';
+        }
+
+        // Validate and add new image
+        uploadOk.addEventListener('click', () => {
+            const link = uploadUrl.value.trim();
+            if (!link) return;
+
+            if (link.toLowerCase().endsWith('.jpeg')) {
+                // Add to galleryItems, store in localStorage, re-render
+                galleryItems.push(link);
+                localStorage.setItem("galleryImages", JSON.stringify(galleryItems));
+                renderGallery();
+                closeUploadModal();
+            } else {
+                // Show error in the same modal
+                uploadError.textContent = "Invalid image link. Please provide a .jpeg URL.";
+                uploadError.style.display = 'block';
+            }
+        });
+
+        // Cancel upload
+        uploadCancel.addEventListener('click', () => {
+            closeUploadModal();
+        });
+
+        // Open delete confirmation modal
+        function openDeleteModal(index) {
+            deleteIndex = index;
+            deleteModal.style.display = 'flex';
+        }
+
+        // Close delete modal
+        function closeDeleteModal() {
+            deleteModal.style.display = 'none';
+            deleteIndex = null;
+        }
+
+        // Handle confirm deletion
+        deleteYes.addEventListener('click', () => {
+            if (deleteIndex !== null) {
+                // Remove from array
+                galleryItems.splice(deleteIndex, 1);
+                localStorage.setItem("galleryImages", JSON.stringify(galleryItems));
+                renderGallery();
+            }
+            closeDeleteModal();
+        });
+
+        // Handle cancel deletion
+        deleteNo.addEventListener('click', () => {
+            closeDeleteModal();
+        });
+
+        // Lightbox functionality
+        function openLightbox(index) {
+            currentIndex = index;
+            showLightbox();
+        }
+
+        function showLightbox() {
+            if (currentIndex < 0 || currentIndex >= galleryItems.length) return;
+            lightboxImg.src = galleryItems[currentIndex];
+            lightboxModal.style.display = 'flex';
+        }
+
+        function hideLightbox() {
+            lightboxModal.style.display = 'none';
+        }
+
+        prevBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            currentIndex = (currentIndex - 1 + galleryItems.length) % galleryItems.length;
+            showLightbox();
+        });
+
+        nextBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            currentIndex = (currentIndex + 1) % galleryItems.length;
+            showLightbox();
+        });
+
+        closeLightbox.addEventListener('click', (e) => {
+            e.stopPropagation();
+            hideLightbox();
+        });
+
+        // Close lightbox if clicking outside the image
+        lightboxModal.addEventListener('click', (e) => {
+            if (e.target === lightboxModal) {
+                hideLightbox();
+            }
+        });
+
+        // Initial render
+        renderGallery();
+    </script>
+</body>
+
+</html>

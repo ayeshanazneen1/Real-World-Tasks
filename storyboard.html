@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Random Storyboard</title>
+    <style>
+        /* Page background and layout for vertical/horizontal centering */
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            /* Black background */
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: sans-serif;
+            color: #fff;
+        }
+
+        /* Container that holds both the storyboard and the buttons */
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        /* Storyboard container: fixed larger size */
+        .storyboard-container {
+            background-color: rgb(91, 35, 25);
+            border: 5px solid darkgreen;
+            /* A little wide outline of dark green color */
+            border-radius: 10px;
+            width: 800px;
+            /* Fixed width */
+            height: 400px;
+            /* Fixed height */
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.1rem;
+        }
+
+        /* Buttons container for spacing */
+        .buttons-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+            width: 80%;
+            max-width: 800px;
+        }
+
+        /* Common 3D effect styling for all buttons */
+        button {
+            cursor: pointer;
+            border: none;
+            outline: none;
+            transition: all 0.1s ease;
+        }
+
+        button:active {
+            transform: translateY(4px);
+        }
+
+        .reset-button {
+            width: 12em;
+            height: 5em;
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            outline: none;
+            border: 2px solid #b18597;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 1.25em 2em;
+            background: #fff0f0;
+            color: #382b22;
+            border-radius: 0.75em;
+            font-size: 1rem;
+            transform-style: preserve-3d;
+            transition: transform 150ms cubic-bezier(0, 0, 0.58, 1),
+                background 150ms cubic-bezier(0, 0, 0.58, 1);
+        }
+
+        .reset-button::before {
+            position: absolute;
+            content: '';
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background: #f9c4d2;
+            border-radius: inherit;
+            box-shadow: 0 0 0 2px #b18597;
+            transform: translate3d(0, 0.75em, -1em);
+            transition: transform 150ms cubic-bezier(0, 0, 0.58, 1),
+                box-shadow 150ms cubic-bezier(0, 0, 0.58, 1);
+        }
+
+        .reset-button:hover {
+            background: #ffe9e9;
+            transform: translate(0, 0.25em);
+        }
+
+        .reset-button:hover::before {
+            box-shadow: 0 0 0 2px #b18597;
+            transform: translate3d(0, 0.5em, -1em);
+        }
+
+        .reset-button:active {
+            background: #ffe9e9;
+            transform: translate(0em, 0.75em);
+        }
+
+        .reset-button:active::before {
+            box-shadow: 0 0 0 2px #b18597, 0 0 #ffe3e2;
+            transform: translate3d(0, 0, -1em);
+        }
+
+        .boat-button {
+            --hue: 76;
+            --sat: 100%;
+            --lum: 32%;
+            display: inline-block;
+            border: none;
+            margin: 0;
+            padding: 0;
+            position: relative;
+            width: 6em;
+            height: 2em;
+            background: none;
+            font: 3em/2.14em 'Advent Pro', sans-serif;
+            filter: none;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .boat-button:focus,
+        .boat-button:hover {
+            outline: none;
+            filter: none;
+        }
+
+        .boat-button:active {
+            transform: translateY(0.25rem);
+        }
+
+        .boat-button:active [aria-hidden='true'] {
+            transform: translateY(var(--ty, 0.25rem));
+        }
+
+        .boat-button:active [aria-hidden='true']:nth-child(2) {
+            --ty: 0.75rem;
+        }
+
+        .boat-button span {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+        }
+
+        .boat-button span[aria-hidden='true'] {
+            filter: none;
+        }
+
+        .boat-button span[aria-hidden='true']::after {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background: hsl(var(--hue), var(--sat), var(--lum));
+            clip-path: polygon(100% 0, 91% 91%, 13% 100%, 0 35%);
+            content: '';
+        }
+
+        .boat-button span[aria-hidden='true']:nth-child(2) {
+            --sat: 0%;
+            --lum: 83%;
+        }
+
+        .boat-button span[aria-hidden='true']:nth-child(2)::after {
+            clip-path: polygon(3% 21%, 85% 25%, 75% 93%, 14% 87%);
+        }
+
+        .boat-button span:last-child {
+            background: none;
+            -webkit-background-clip: border-box;
+            background-clip: border-box;
+            color: #070707;
+            font-size: 1.5rem;
+            filter: none;
+        }
+
+        .boat-button:nth-of-type(2) {
+            --hue: 187;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <!-- Storyboard container -->
+        <div class="storyboard-container" id="storyboard">
+            <!-- Current sentence will be displayed here (no numbering) -->
+        </div>
+
+        <!-- Buttons below the storyboard -->
+        <div class="buttons-container">
+            <!-- Previous Button -->
+            <button class="boat-button" id="prevBtn" onclick="prevSentence()">
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span>Previous</span>
+            </button>
+
+            <!-- Next Button -->
+            <button class="boat-button" id="nextBtn" onclick="nextSentence()">
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span>Next</span>
+            </button>
+
+            <!-- Reset button -->
+            <button class="reset-button" id="resetBtn" onclick="resetStory()">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        /*
+          We have 10 stories. Each story is an array of sentences (5 each).
+          The reset button picks one of these stories at random.
+          Next and previous buttons navigate the sentences within the current story.
+          We do NOT display story or sentence numbering, only the sentence text.
+        */
+        const stories = [
+            [
+                "In the ancient kingdom of Astra, a hidden library held all the secrets of the stars.",
+                "Scholars from every corner of the land came to study these celestial tomes.",
+                "One day, a young apprentice found a scroll describing a forgotten constellation.",
+                "The scroll promised great power to whoever deciphered its code.",
+                "Determined, the apprentice studied day and night, unlocking the stars' hidden magic."
+            ],
+            [
+                "Deep in a mystical forest, a lone wolf guarded a crystal lake.",
+                "Travelers spoke of the lake's healing waters, but few dared approach the wolf.",
+                "A wandering bard ventured forth, offering a soothing melody instead of fear.",
+                "Moved by the music, the wolf allowed the bard to fill a flask from the lake.",
+                "The bard returned to the village, curing the sick and spreading hope."
+            ],
+            [
+                "High above the clouds, an airship carried explorers in search of floating islands.",
+                "Captain Mira charted the skies with a steady hand and a determined gaze.",
+                "A sudden storm tested their resolve, battering the hull with lightning.",
+                "Through teamwork and skill, they guided the ship to safety beyond the tempest.",
+                "On the horizon, the shimmering shapes of the floating islands beckoned them onward."
+            ],
+            [
+                "In a quiet seaside town, an old lighthouse keeper waited for a ship that never came.",
+                "Each night, he faithfully lit the beacon, hoping to guide lost sailors home.",
+                "Decades passed, yet he never wavered in his silent vigil.",
+                "One morning, a bottle washed ashore with a note praising the distant light.",
+                "The keeper smiled, finally knowing his efforts had saved lives across the sea."
+            ],
+            [
+                "Beneath the desert sands, a secret city thrived in cool underground caverns.",
+                "Its people mined rare gems and cultivated glowing mushrooms for sustenance.",
+                "A surface merchant discovered an entrance and was awed by the hidden metropolis.",
+                "With careful diplomacy, trade between the desert dwellers and the city began.",
+                "Peace soon bridged the gap between two very different worlds."
+            ],
+            [
+                "Far in the north, a kingdom of ice glistened under the polar auroras.",
+                "The ice queen ruled kindly, sharing her magic to create spectacular sculptures.",
+                "One day, a fierce dragon arrived, its fiery breath threatening to melt the realm.",
+                "Summoning her powers, the queen forged an icy barrier to shield her people.",
+                "Realizing the dragon was injured, she healed its wounds, forging an unlikely friendship."
+            ],
+            [
+                "In a bustling city, a clockmaker built intricate devices powered by shimmering crystals.",
+                "Each clock whispered stories of distant lands and hidden wonders.",
+                "A curious child, entranced by the tales, asked the clockmaker for a special watch.",
+                "The watch, once complete, guided the child through visions of history and future.",
+                "Inspired, the child grew up to become a legendary explorer of time and space."
+            ],
+            [
+                "On a tiny island, villagers relied on a massive tree for food and shelter.",
+                "Its branches bore fruit year-round, and its leaves provided healing medicine.",
+                "A great storm uprooted the tree, sending fear through the community.",
+                "Working together, the villagers replanted it, tending to its roots day and night.",
+                "When it flourished again, they realized their unity was the island's true strength."
+            ],
+            [
+                "At the edge of a vast canyon, a tribe of bird riders mastered the art of flight.",
+                "Their bond with giant falcons was forged through respect and trust.",
+                "A drought threatened the land, forcing them to search beyond the canyon for water.",
+                "The riders discovered a hidden oasis teeming with life and hope.",
+                "Returning home, they guided their falcons to carry water back to the parched fields."
+            ],
+            [
+                "In a grand city of towers, an inventor dreamed of connecting people across great distances.",
+                "He built a network of glowing cables that could send messages instantly.",
+                "Skeptics mocked him, calling it an impossible fantasy.",
+                "But when distant relatives reunited using his invention, the city rejoiced.",
+                "His cables soon spanned the continent, ushering in a new era of communication."
+            ]
+        ];
+
+        let currentStory = [];
+        let currentSentenceIndex = 0;
+
+        // Pick a random story from the array
+        function pickRandomStory() {
+            const randomIndex = Math.floor(Math.random() * stories.length);
+            return stories[randomIndex];
+        }
+
+        // Display the current sentence (no numbering)
+        function displayCurrentSentence() {
+            const storyboard = document.getElementById('storyboard');
+            storyboard.textContent = currentStory[currentSentenceIndex];
+        }
+
+        // Show the next sentence
+        function nextSentence() {
+            if (currentSentenceIndex < currentStory.length - 1) {
+                currentSentenceIndex++;
+                displayCurrentSentence();
+            }
+        }
+
+        // Show the previous sentence
+        function prevSentence() {
+            if (currentSentenceIndex > 0) {
+                currentSentenceIndex--;
+                displayCurrentSentence();
+            }
+        }
+
+        // Reset to a new random story
+        function resetStory() {
+            currentStory = pickRandomStory();
+            currentSentenceIndex = 0;
+            displayCurrentSentence();
+            randomizeSmallBoatOffsets("prevBtn");
+            randomizeSmallBoatOffsets("nextBtn");
+        }
+
+        // Randomize the position of the small boat in a given button
+        function randomizeSmallBoatOffsets(buttonId) {
+            const smallBoat = document.querySelector(`#${buttonId} .boat-bg-small`);
+            if (!smallBoat) return;
+            // We'll allow offsets so the small boat remains mostly within the large one.
+            // Since we scale the small boat to 0.6, let's keep offsets within a safe range.
+            const offsetTop = Math.floor(Math.random() * 20);
+            const offsetLeft = Math.floor(Math.random() * 30);
+            smallBoat.style.top = offsetTop + "px";
+            smallBoat.style.left = offsetLeft + "px";
+        }
+
+        // On page load, pick a random story and randomize the small boat offsets
+        window.onload = function () {
+            currentStory = pickRandomStory();
+            currentSentenceIndex = 0;
+            displayCurrentSentence();
+            randomizeSmallBoatOffsets("prevBtn");
+            randomizeSmallBoatOffsets("nextBtn");
+        };
+    </script>
+</body>
+
+</html>

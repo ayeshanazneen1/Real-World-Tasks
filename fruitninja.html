@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Fruit Ninja - Smooth Rise and Fall</title>
+    <style>
+        /* Basic reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Body background is black */
+        body {
+            background: black;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* Container for the game canvas */
+        #gameContainer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #654321;
+            /* Dark brown board */
+            border: 2px solid #222;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+            display: inline-block;
+            overflow: hidden;
+        }
+
+        /* The game board (canvas) */
+        #gameCanvas {
+            display: block;
+            background: #654321;
+        }
+
+        /*
+      A knife cursor with a taller black handle (tilted from the bottom to the left) and white blade.
+      The "tip" hotspot is near (12,20) so the tip is the "cutting" point.
+    */
+        body,
+        #gameCanvas {
+            cursor: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'>\
+  <path fill='black' d='M8,45 L24,46 L22,30 L12,28 Z'/>\
+  <path fill='white' d='M12,28 L25,10 L35,10 L32,20 L22,30 Z'/>\
+  <path fill='%23ccc' d='M25,10 L35,10 L32,18 L22,28 Z'/>\
+</svg>") 12 30, auto;
+        }
+
+
+
+        /* Score display (top-left corner within container) */
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            font-size: 24px;
+            font-family: Arial, sans-serif;
+            text-shadow: 1px 1px 2px #000;
+            pointer-events: none;
+        }
+
+        /* Time display (top-right corner within container) */
+        #time {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #fff;
+            font-size: 24px;
+            font-family: Arial, sans-serif;
+            text-shadow: 1px 1px 2px #000;
+            pointer-events: none;
+        }
+
+        /* Overlay shown when the game ends */
+        #gameOverOverlay {
+            position: absolute;
+            top: 35%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            font-size: 24px;
+            text-align: center;
+            border-radius: 10px;
+            display: none;
+            /* Hidden until game over */
+            width: 300px;
+        }
+
+        #finalScore {
+            margin-top: 10px;
+            display: block;
+        }
+
+        #playAgainBtn {
+            margin-top: 15px;
+            font-size: 18px;
+            padding: 5px 10px;
+            cursor: pointer;
+            background: #f2f2f2;
+            border: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="gameContainer">
+        <!-- 800x400 game board -->
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <div id="score">Score: 0</div>
+        <div id="time">Time: 120</div>
+        <div id="gameOverOverlay">
+            <div id="gameOverText"></div>
+            <span id="finalScore"></span>
+            <button id="playAgainBtn">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        /***************************************************
+         * Fruit Ninja style game with:
+         * - Smooth sine-wave rise and fall of fruits/bombs.
+         * - Increasing spawn frequency over time.
+         * - Watermelon & pomegranate worth +5, others +2.
+         * - Brownish popup text for scores.
+         * - 2-minute timer, bomb => immediate game over.
+         * - Bomb now has a sparkling effect at the bottom.
+         * - Strawberry seeds removed, so no "sparkles" there.
+         ***************************************************/
+
+        window.addEventListener('load', () => {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+
+            const scoreDisplay = document.getElementById('score');
+            const timeDisplay = document.getElementById('time');
+            const gameOverOverlay = document.getElementById('gameOverOverlay');
+            const gameOverText = document.getElementById('gameOverText');
+            const finalScoreDisplay = document.getElementById('finalScore');
+            const playAgainBtn = document.getElementById('playAgainBtn');
+
+            const width = canvas.width;
+            const height = canvas.height;
+
+            // Timer settings (2 minutes)
+            const GAME_DURATION = 120000;
+            let startTime = 0;
+
+            // Game state
+            let objects = []; // array of fruit/bomb objects (and fruitHalf)
+            let popups = [];  // score popups
+            let score = 0;
+            let gameOver = false;
+
+            // Mouse tracking for slicing
+            let lastMouse = { x: 0, y: 0 };
+            let mouse = { x: 0, y: 0 };
+
+            // Probability of bomb
+            const BOMB_PROBABILITY = 0.2;
+
+            // Fruit types
+            const FRUIT_TYPES = [
+                'apple',
+                'banana',
+                'watermelon',
+                'pineapple',
+                'kiwi',
+                'pomegranate',
+                'strawberry'
+            ];
+
+            // For each fruit, radius used for collision detection
+            const FRUIT_RADIUS = 40;
+
+            /*************************************************************
+             * 1) Collision: line-circle intersection for slicing
+             *************************************************************/
+            function lineCircleIntersect(x1, y1, x2, y2, cx, cy, r) {
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+
+                // If the line segment is actually just a point
+                if (dx === 0 && dy === 0) {
+                    const distPoint = Math.hypot(cx - x1, cy - y1);
+                    return distPoint <= r;
+                }
+
+                // Project center of circle onto line, clamping t to [0,1]
+                let t = ((cx - x1) * dx + (cy - y1) * dy) / (dx * dx + dy * dy);
+                t = Math.max(0, Math.min(1, t));
+
+                // Closest point on the line
+                const closestX = x1 + t * dx;
+                const closestY = y1 + t * dy;
+
+                // Distance from circle center to closest point
+                const dist = Math.hypot(cx - closestX, cy - closestY);
+                return dist <= r;
+            }
+
+            /*************************************************************
+             * 2) Spawn new objects (fruit or bomb) with smooth up-down
+             *************************************************************/
+            function spawnObject() {
+                const now = Date.now();
+
+                // Random total duration for the up-and-down motion (2-3 seconds)
+                const totalDuration = 2000 + Math.random() * 1000;
+
+                // We'll define the bottom just below the canvas
+                const bottomY = height + 50;
+                // The top is some random position near top (so they don't go fully off screen)
+                const topY = 50 + Math.random() * (height * 0.3);
+
+                // Random x within the canvas
+                const x = FRUIT_RADIUS + Math.random() * (width - 2 * FRUIT_RADIUS);
+
+                // Rotation parameters
+                const rotationSpeed = (Math.random() - 0.5) * 0.005; // small spin
+                const rotationOffset = Math.random() * Math.PI * 2;
+
+                // Decide if it's a bomb or a fruit
+                const isBomb = Math.random() < BOMB_PROBABILITY;
+                let fruitType = null;
+                if (!isBomb) {
+                    fruitType = FRUIT_TYPES[Math.floor(Math.random() * FRUIT_TYPES.length)];
+                }
+
+                objects.push({
+                    type: isBomb ? 'bomb' : 'fruit',
+                    fruitType: fruitType,
+                    spawnTime: now,
+                    totalDuration: totalDuration,
+                    bottomY: bottomY,
+                    topY: topY,
+                    x: x,
+                    radius: FRUIT_RADIUS,
+                    rotationSpeed: rotationSpeed,
+                    rotationOffset: rotationOffset,
+                    alive: true
+                });
+            }
+
+            /*************************************************************
+             * 3) Slicing fruit => turn into two halves + score popup
+             *************************************************************/
+            function sliceFruit(obj) {
+                obj.alive = false;
+
+                // Determine score
+                let gained = 2;
+                if (obj.fruitType === 'watermelon' || obj.fruitType === 'pomegranate') {
+                    gained = 5;
+                }
+                score += gained;
+                scoreDisplay.textContent = "Score: " + score;
+
+                // Show ephemeral text at the object's current position
+                const { x, y } = getObjectPosition(obj, Date.now());
+                addPopup("+" + gained, x, y);
+
+                // Create two halves
+                objects.push(
+                    {
+                        type: 'fruitHalf',
+                        fruitType: obj.fruitType,
+                        side: 'left',
+                        spawnTime: obj.spawnTime,
+                        totalDuration: obj.totalDuration,
+                        bottomY: obj.bottomY,
+                        topY: obj.topY,
+                        x: obj.x - 10,
+                        radius: obj.radius,
+                        rotationSpeed: obj.rotationSpeed - 0.002,
+                        rotationOffset: obj.rotationOffset,
+                        alive: true
+                    },
+                    {
+                        type: 'fruitHalf',
+                        fruitType: obj.fruitType,
+                        side: 'right',
+                        spawnTime: obj.spawnTime,
+                        totalDuration: obj.totalDuration,
+                        bottomY: obj.bottomY,
+                        topY: obj.topY,
+                        x: obj.x + 10,
+                        radius: obj.radius,
+                        rotationSpeed: obj.rotationSpeed + 0.002,
+                        rotationOffset: obj.rotationOffset,
+                        alive: true
+                    }
+                );
+            }
+
+            /*************************************************************
+             * 4) Calculate object position & rotation over time
+             *    Using a sine wave for smooth up-and-down.
+             *************************************************************/
+            function getObjectPosition(obj, currentTime) {
+                const dt = currentTime - obj.spawnTime;
+                let fraction = dt / obj.totalDuration;
+
+                // If not started or finished, clamp
+                if (fraction < 0) fraction = 0;
+                if (fraction > 1) fraction = 1;
+
+                // Sine wave: at fraction=0 => bottom, fraction=0.5 => top, fraction=1 => bottom
+                // y = bottomY + (topY - bottomY) * sin(pi * fraction)
+                const s = Math.sin(Math.PI * fraction);
+                const y = obj.bottomY + (obj.topY - obj.bottomY) * s;
+
+                // Rotation
+                const rotation = obj.rotationOffset + obj.rotationSpeed * dt;
+
+                return { x: obj.x, y, rotation };
+            }
+
+            /*************************************************************
+             * 5) Drawing: fruit, bombs, halves
+             *************************************************************/
+            function drawObject(obj) {
+                const now = Date.now();
+                const { x, y, rotation } = getObjectPosition(obj, now);
+
+                if (obj.type === 'bomb') {
+                    drawBomb(x, y, rotation);
+                } else if (obj.type === 'fruit') {
+                    drawFruit(obj.fruitType, x, y, rotation);
+                } else if (obj.type === 'fruitHalf') {
+                    drawFruitHalf(obj.fruitType, obj.side, x, y, rotation);
+                }
+            }
+
+            /* Bomb with sparkling effect near the bottom */
+            function drawBomb(x, y, rotation) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+
+                // Main bomb
+                ctx.beginPath();
+                ctx.fillStyle = 'black';
+                ctx.arc(0, 0, 30, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Fuse
+                ctx.beginPath();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.moveTo(20, -20);
+                ctx.lineTo(30, -30);
+                ctx.stroke();
+
+                // Sparkling effect near the bottom
+                // Enhanced sparkling effect fully at the bottom
+                // Sparkling effect along the entire bottom half of the bomb
+
+                const angleCenter = (3 * Math.PI) / 4;  // 135°
+                const angleRange = Math.PI / 2;        // 90° total => ±45°
+                const angleStart = angleCenter - angleRange / 2; // 135° - 45° => 90°
+                const angleEnd = angleCenter + angleRange / 2; // 135° + 45° => 180°
+
+                ctx.fillStyle = 'yellow';
+                for (let i = 0; i < 15; i++) {
+                    const angle = angleStart + Math.random() * (angleEnd - angleStart);
+                    const radius = 25 + Math.random() * 10; // 25..35
+                    const sx = Math.cos(angle) * radius;
+                    const sy = Math.sin(angle) * radius;
+
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, 3, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+
+            /* Full Fruit (delegate to specialized draws) */
+            function drawFruit(type, x, y, rotation) {
+                switch (type) {
+                    case 'apple':
+                        drawApple(x, y, rotation);
+                        break;
+                    case 'banana':
+                        drawBanana(x, y, rotation);
+                        break;
+                    case 'watermelon':
+                        drawWatermelon(x, y, rotation);
+                        break;
+                    case 'pineapple':
+                        drawPineapple(x, y, rotation);
+                        break;
+                    case 'kiwi':
+                        drawKiwi(x, y, rotation);
+                        break;
+                    case 'pomegranate':
+                        drawPomegranate(x, y, rotation);
+                        break;
+                    case 'strawberry':
+                        drawStrawberry(x, y, rotation);
+                        break;
+                }
+            }
+
+            /* Fruit half (delegate) */
+            function drawFruitHalf(type, side, x, y, rotation) {
+                switch (type) {
+                    case 'apple':
+                        drawAppleHalf(x, y, rotation, side);
+                        break;
+                    case 'banana':
+                        drawBananaHalf(x, y, rotation, side);
+                        break;
+                    case 'watermelon':
+                        drawWatermelonHalf(x, y, rotation, side);
+                        break;
+                    case 'pineapple':
+                        drawPineappleHalf(x, y, rotation, side);
+                        break;
+                    case 'kiwi':
+                        drawKiwiHalf(x, y, rotation, side);
+                        break;
+                    case 'pomegranate':
+                        drawPomegranateHalf(x, y, rotation, side);
+                        break;
+                    case 'strawberry':
+                        drawStrawberryHalf(x, y, rotation, side);
+                        break;
+                }
+            }
+
+            /*************************************************************
+             * Fruit drawing details (full and half)
+             * Strawberry seeds removed to avoid "sparkling" confusion.
+             *************************************************************/
+            /* Apple */
+            function drawApple(x, y, rotation) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+
+                // Main apple body
+                ctx.beginPath();
+                ctx.fillStyle = 'red';
+                ctx.moveTo(0, -30);
+                ctx.bezierCurveTo(-20, -50, -40, 0, 0, 30);
+                ctx.bezierCurveTo(40, 0, 20, -50, 0, -30);
+                ctx.fill();
+
+                // Stem
+                ctx.beginPath();
+                ctx.fillStyle = 'brown';
+                ctx.fillRect(-2, -35, 4, 10);
+
+                ctx.restore();
+            }
+
+            function drawAppleHalf(x, y, rotation, side) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+
+                // Outer half
+                ctx.beginPath();
+                ctx.fillStyle = 'red';
+                if (side === 'left') {
+                    ctx.moveTo(0, -30);
+                    ctx.bezierCurveTo(-20, -50, -40, 0, 0, 30);
+                    ctx.lineTo(0, -30);
+                } else {
+                    ctx.moveTo(0, -30);
+                    ctx.bezierCurveTo(40, 0, 20, -50, 0, -30);
+                    ctx.lineTo(0, 30);
+                }
+                ctx.fill();
+
+                // Inner flesh
+                ctx.beginPath();
+                ctx.fillStyle = '#ffe5d9';
+                if (side === 'left') {
+                    ctx.moveTo(0, -28);
+                    ctx.bezierCurveTo(-16, -44, -32, 0, 0, 28);
+                    ctx.lineTo(0, -28);
+                } else {
+                    ctx.moveTo(0, -28);
+                    ctx.bezierCurveTo(32, 0, 16, -44, 0, -28);
+                    ctx.lineTo(0, 28);
+                }
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            /* Banana */
+            function drawBanana(x, y, rotation) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+
+                ctx.beginPath();
+                ctx.fillStyle = 'yellow';
+                ctx.moveTo(-30, 0);
+                ctx.quadraticCurveTo(-20, -40, 30, -20);
+                ctx.quadraticCurveTo(20, 10, -30, 0);
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            function drawBananaHalf(x, y, rotation, side) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+
+                ctx.beginPath();
+                ctx.fillStyle = 'yellow';
+                if (side === 'left') {
+                    ctx.moveTo(-30, 0);
+                    ctx.quadraticCurveTo(-20, -40, 0, -20);
+                    ctx.lineTo(0, 0);
+                    ctx.quadraticCurveTo(0, 10, -30, 0);
+                } else {
+                    ctx.moveTo(0, -20);
+                    ctx.quadraticCurveTo(30, -20, 30, -20);
+                    ctx.quadraticCurveTo(20, 10, 0, 0);
+                    ctx.lineTo(0, -20);
+                }
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            /* Watermelon */
+            function drawWatermelon(x, y, rotation) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+
+                // Outer green ellipse
+                ctx.beginPath();
+                ctx.fillStyle = 'green';
+                ctx.ellipse(0, 0, 40, 30, 0, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Inner pink ellipse
+                ctx.beginPath();
+                ctx.fillStyle = 'pink';
+                ctx.ellipse(0, 0, 34, 24, 0, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Seeds
+                ctx.fillStyle = 'black';
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i / 6) * 2 * Math.PI;
+                    const sx = Math.cos(angle) * 15;
+                    const sy = Math.sin(angle) * 10;
+                    ctx.beginPath();
+                    ctx.ellipse(sx, sy, 3, 5, angle, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            }
+
+            function drawWatermelonHalf(x, y, rotation, side) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+
+                // Outer green half
+                ctx.beginPath();
+                ctx.fillStyle = 'green';
+                if (side === 'left') {
+                    ctx.ellipse(0, 0, 40, 30, 0, Math.PI / 2, 3 * Math.PI / 2);
+                } else {
+                    ctx.ellipse(0, 0, 40, 30, 0, -Math.PI / 2, Math.PI / 2);
+                }
+                ctx.fill();
+
+                // Inner pink half
+                ctx.beginPath();
+                ctx.fillStyle = 'pink';
+                if (side === 'left') {
+                    ctx.ellipse(0, 0, 34, 24, 0, Math.PI / 2, 3 * Math.PI / 2);
+                } else {
+                    ctx.ellipse(0, 0, 34, 24, 0, -Math.PI / 2, Math.PI / 2);
+                }
+                ctx.fill();
+
+                // Seeds
+                ctx.fillStyle = 'black';
+                for (let i = 0; i < 3; i++) {
+                    let angle;
+                    if (side === 'left') {
+                        angle = Math.PI / 2 + Math.random() * Math.PI;
+                    } else {
+                        angle = -Math.PI / 2 + Math.random() * Math.PI;
+                    }
+                    const sx = Math.cos(angle) * 15;
+                    const sy = Math.sin(angle) * 10;
+                    ctx.beginPath();
+                    ctx.ellipse(sx, sy, 3, 5, angle, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            }
+
+            /* Pineapple */
+            function drawPineapple(x, y, rotation) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+
+                // Body
+                ctx.beginPath();
+                ctx.fillStyle = '#daa520'; // golden
+                ctx.fillRect(-20, -30, 40, 60);
+
+                // Leaves
+                ctx.beginPath();
+                ctx.fillStyle = 'green';
+                ctx.moveTo(0, -30);
+                ctx.lineTo(-10, -50);
+                ctx.lineTo(0, -45);
+                ctx.lineTo(10, -50);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            function drawPineappleHalf(x, y, rotation, side) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+
+                // Half body
+                ctx.beginPath();
+                ctx.fillStyle = '#daa520';
+                if (side === 'left') {
+                    ctx.fillRect(-20, -30, 20, 60);
+                } else {
+                    ctx.fillRect(0, -30, 20, 60);
+                }
+
+                // Leaves half
+                ctx.beginPath();
+                ctx.fillStyle = 'green';
+                if (side === 'left') {
+                    ctx.moveTo(0, -30);
+                    ctx.lineTo(-10, -50);
+                    ctx.lineTo(0, -45);
+                } else {
+                    ctx.moveTo(0, -30);
+                    ctx.lineTo(10, -50);
+                    ctx.lineTo(0, -45);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+                // Inner flesh
+                ctx.beginPath();
+                ctx.fillStyle = '#ffe4b5';
+                if (side === 'left') {
+                    ctx.fillRect(-20, -28, 20, 56);
+                } else {
+                    ctx.fillRect(0, -28, 20, 56);
+                }
+
+                ctx.restore();
+            }
+
+            /* Kiwi */
+            function drawKiwi(x, y, rotation) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+
+                // Outer brown circle
+                ctx.beginPath();
+                ctx.fillStyle = '#8B4513';
+                ctx.arc(0, 0, 30, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Green ring
+                ctx.beginPath();
+                ctx.fillStyle = 'green';
+                ctx.arc(0, 0, 25, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // White center
+                ctx.beginPath();
+                ctx.fillStyle = 'white';
+                ctx.arc(0, 0, 10, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Seeds (black lines)
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < 12; i++) {
+                    const angle = (i / 12) * 2 * Math.PI;
+                    const rOuter = 20;
+                    const rInner = 10;
+                    const x1 = Math.cos(angle) * rInner;
+                    const y1 = Math.sin(angle) * rInner;
+                    const x2 = Math.cos(angle) * rOuter;
+                    const y2 = Math.sin(angle) * rOuter;
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+
+            function drawKiwiHalf(x, y, rotation, side) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+
+                // Outer brown half
+                ctx.beginPath();
+                ctx.fillStyle = '#8B4513';
+                if (side === 'left') {
+                    ctx.arc(0, 0, 30, Math.PI / 2, 3 * Math.PI / 2);
+                } else {
+                    ctx.arc(0, 0, 30, -Math.PI / 2, Math.PI / 2);
+                }
+                ctx.fill();
+
+                // Green half
+                ctx.beginPath();
+                ctx.fillStyle = 'green';
+                if (side === 'left') {
+                    ctx.arc(0, 0, 25, Math.PI / 2, 3 * Math.PI / 2);
+                } else {
+                    ctx.arc(0, 0, 25, -Math.PI / 2, Math.PI / 2);
+                }
+                ctx.fill();
+
+                // White center
+                ctx.beginPath();
+                ctx.fillStyle = 'white';
+                if (side === 'left') {
+                    ctx.arc(0, 0, 10, Math.PI / 2, 3 * Math.PI / 2);
+                } else {
+                    ctx.arc(0, 0, 10, -Math.PI / 2, Math.PI / 2);
+                }
+                ctx.fill();
+
+                // Seeds
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < 6; i++) {
+                    let angle;
+                    if (side === 'left') {
+                        angle = Math.PI / 2 + Math.random() * Math.PI;
+                    } else {
+                        angle = -Math.PI / 2 + Math.random() * Math.PI;
+                    }
+                    const rOuter = 25;
+                    const rInner = 10;
+                    const x1 = Math.cos(angle) * rInner;
+                    const y1 = Math.sin(angle) * rInner;
+                    const x2 = Math.cos(angle) * rOuter;
+                    const y2 = Math.sin(angle) * rOuter;
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+
+            /* Pomegranate */
+            function drawPomegranate(x, y, rotation) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+
+                // Red circle
+                ctx.beginPath();
+                ctx.fillStyle = 'darkred';
+                ctx.arc(0, 0, 30, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Crown top
+                ctx.beginPath();
+                ctx.fillStyle = 'red';
+                ctx.moveTo(-5, -30);
+                ctx.lineTo(-10, -40);
+                ctx.lineTo(0, -35);
+                ctx.lineTo(10, -40);
+                ctx.lineTo(5, -30);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            function drawPomegranateHalf(x, y, rotation, side) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+
+                // Outer half
+                ctx.beginPath();
+                ctx.fillStyle = 'darkred';
+                if (side === 'left') {
+                    ctx.arc(0, 0, 30, Math.PI / 2, 3 * Math.PI / 2);
+                } else {
+                    ctx.arc(0, 0, 30, -Math.PI / 2, Math.PI / 2);
+                }
+                ctx.fill();
+
+                // Crown half
+                ctx.beginPath();
+                ctx.fillStyle = 'red';
+                if (side === 'left') {
+                    ctx.moveTo(0, -30);
+                    ctx.lineTo(-5, -30);
+                    ctx.lineTo(-10, -40);
+                    ctx.lineTo(0, -35);
+                } else {
+                    ctx.moveTo(0, -30);
+                    ctx.lineTo(5, -30);
+                    ctx.lineTo(10, -40);
+                    ctx.lineTo(0, -35);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+                // Inside seeds (small pink circles)
+                ctx.fillStyle = '#ff9999';
+                for (let i = 0; i < 10; i++) {
+                    let angle;
+                    if (side === 'left') {
+                        angle = Math.PI / 2 + Math.random() * Math.PI;
+                    } else {
+                        angle = -Math.PI / 2 + Math.random() * Math.PI;
+                    }
+                    const r = 20;
+                    const sx = Math.cos(angle) * r;
+                    const sy = Math.sin(angle) * r;
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, 3 + Math.random() * 2, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            }
+
+            /* Strawberry (seeds removed) */
+            function drawStrawberry(x, y, rotation) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+
+                // Red body
+                ctx.beginPath();
+                ctx.fillStyle = 'red';
+                ctx.moveTo(0, -25);
+                ctx.bezierCurveTo(-20, -25, -20, 10, 0, 25);
+                ctx.bezierCurveTo(20, 10, 20, -25, 0, -25);
+                ctx.fill();
+
+                // Green leaves
+                ctx.beginPath();
+                ctx.fillStyle = 'green';
+                ctx.moveTo(-10, -25);
+                ctx.lineTo(-15, -35);
+                ctx.lineTo(0, -28);
+                ctx.lineTo(15, -35);
+                ctx.lineTo(10, -25);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            function drawStrawberryHalf(x, y, rotation, side) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+
+                // Outer red half
+                ctx.beginPath();
+                ctx.fillStyle = 'red';
+                if (side === 'left') {
+                    ctx.moveTo(0, -25);
+                    ctx.bezierCurveTo(-20, -25, -20, 10, 0, 25);
+                    ctx.lineTo(0, -25);
+                } else {
+                    ctx.moveTo(0, -25);
+                    ctx.bezierCurveTo(20, -25, 20, 10, 0, 25);
+                    ctx.lineTo(0, -25);
+                }
+                ctx.fill();
+
+                // Green leaf half
+                ctx.beginPath();
+                ctx.fillStyle = 'green';
+                if (side === 'left') {
+                    ctx.moveTo(0, -25);
+                    ctx.lineTo(-10, -25);
+                    ctx.lineTo(-15, -35);
+                    ctx.lineTo(0, -28);
+                } else {
+                    ctx.moveTo(0, -25);
+                    ctx.lineTo(10, -25);
+                    ctx.lineTo(15, -35);
+                    ctx.lineTo(0, -28);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+                // Inner flesh
+                ctx.beginPath();
+                ctx.fillStyle = '#ffb6c1';
+                if (side === 'left') {
+                    ctx.moveTo(0, -23);
+                    ctx.bezierCurveTo(-16, -23, -16, 8, 0, 23);
+                    ctx.lineTo(0, -23);
+                } else {
+                    ctx.moveTo(0, -23);
+                    ctx.bezierCurveTo(16, -23, 16, 8, 0, 23);
+                    ctx.lineTo(0, -23);
+                }
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            /*************************************************************
+             * 6) Pop-up text for scoring (darker brown color)
+             *************************************************************/
+            function addPopup(text, x, y) {
+                popups.push({
+                    text: text,
+                    x: x,
+                    y: y,
+                    spawnTime: Date.now(),
+                    duration: 800 // ms
+                });
+            }
+
+            function drawPopups() {
+                const now = Date.now();
+                for (let i = 0; i < popups.length; i++) {
+                    const p = popups[i];
+                    const dt = now - p.spawnTime;
+                    const frac = dt / p.duration;
+                    if (frac > 1) {
+                        p.dead = true;
+                        continue;
+                    }
+                    // fade + rise
+                    const alpha = 1 - frac;
+                    const rise = frac * 30; // move upward
+                    ctx.save();
+                    ctx.globalAlpha = alpha;
+                    ctx.fillStyle = '#8B4513';  // darker brown color
+                    ctx.font = '20px Arial';
+                    ctx.fillText(p.text, p.x, p.y - rise);
+                    ctx.restore();
+                }
+                popups = popups.filter(p => !p.dead);
+            }
+
+            /*************************************************************
+             * 7) End game
+             *************************************************************/
+            function endGame(reason) {
+                gameOver = true;
+                let message = "Game Over!";
+                if (reason === 'bomb') {
+                    message = "You hit a bomb!";
+                } else if (reason === 'time') {
+                    message = "Time's up!";
+                }
+                gameOverText.textContent = message;
+                finalScoreDisplay.textContent = "Your final score: " + score;
+                gameOverOverlay.style.display = 'block';
+            }
+
+            /*************************************************************
+             * 8) Reset / Start new game
+             *************************************************************/
+            function resetGame() {
+                gameOverOverlay.style.display = 'none';
+                score = 0;
+                scoreDisplay.textContent = "Score: 0";
+                gameOver = false;
+                objects = [];
+                popups = [];
+                lastMouse = { x: 0, y: 0 };
+                mouse = { x: 0, y: 0 };
+                startTime = Date.now();
+            }
+
+            /*************************************************************
+             * 9) Main update loop
+             *************************************************************/
+            function update() {
+                if (gameOver) return;
+
+                const now = Date.now();
+                const elapsed = now - startTime;
+                const remaining = Math.max(0, GAME_DURATION - elapsed);
+
+                // Check if time is up
+                if (remaining <= 0) {
+                    endGame('time');
+                    return;
+                }
+
+                // Clear the canvas
+                ctx.clearRect(0, 0, width, height);
+
+                // Update objects
+                for (let i = 0; i < objects.length; i++) {
+                    const obj = objects[i];
+                    if (!obj.alive) continue;
+
+                    const dt = now - obj.spawnTime;
+                    // If the object has completed its total motion, remove it
+                    if (dt > obj.totalDuration) {
+                        obj.alive = false;
+                        continue;
+                    }
+
+                    // Check slicing if fruit or bomb
+                    if (obj.type === 'fruit' || obj.type === 'bomb') {
+                        const { x, y } = getObjectPosition(obj, now);
+                        if (lineCircleIntersect(
+                            lastMouse.x, lastMouse.y,
+                            mouse.x, mouse.y,
+                            x, y, obj.radius
+                        )) {
+                            if (obj.type === 'bomb') {
+                                endGame('bomb');
+                                return;
+                            } else {
+                                sliceFruit(obj);
+                            }
+                        }
+                    }
+                }
+
+                // Draw objects
+                for (let i = 0; i < objects.length; i++) {
+                    if (objects[i].alive) {
+                        drawObject(objects[i]);
+                    }
+                }
+
+                // Remove dead objects
+                objects = objects.filter(o => o.alive);
+
+                // Draw popups (score text)
+                drawPopups();
+
+                // Update time display
+                timeDisplay.textContent = "Time: " + Math.ceil(remaining / 1000);
+
+                // Update last mouse
+                lastMouse.x = mouse.x;
+                lastMouse.y = mouse.y;
+
+                requestAnimationFrame(update);
+            }
+
+            /*************************************************************
+             * 10) Event listeners & spawn intervals
+             *************************************************************/
+            // Mouse movement
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                mouse.x = e.clientX - rect.left;
+                mouse.y = e.clientY - rect.top;
+            });
+
+            // Restart button
+            playAgainBtn.addEventListener('click', () => {
+                resetGame();
+                update();
+            });
+
+            // Spawn objects on a set interval, with increasing count over time
+            setInterval(() => {
+                if (!gameOver) {
+                    const now = Date.now();
+                    const elapsed = now - startTime;
+                    // Increase spawn count every 20 seconds
+                    const spawnCount = 1 + Math.floor(elapsed / 20000);
+                    for (let i = 0; i < spawnCount; i++) {
+                        spawnObject();
+                    }
+                }
+            }, 1000);
+
+            // Start
+            resetGame();
+            update();
+        });
+    </script>
+</body>
+
+</html>

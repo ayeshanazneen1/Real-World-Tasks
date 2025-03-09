@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Invoice Generator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 1rem;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1,
+        h2 {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .form-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        .form-container,
+        .preview-container {
+            flex: 1 1 400px;
+            min-width: 300px;
+        }
+
+        .form-container {
+            padding: 1rem;
+            border-right: 1px solid #ccc;
+        }
+
+        .preview-container {
+            padding: 1rem;
+        }
+
+        form label {
+            display: block;
+            margin-bottom: 0.25rem;
+            font-weight: bold;
+        }
+
+        .required::after {
+            content: " *";
+            color: red;
+        }
+
+        .error-message {
+            color: red;
+            margin-bottom: 0.5rem;
+        }
+
+        form input[type="text"],
+        form input[type="number"],
+        form input[type="date"],
+        form textarea {
+            width: 100%;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            box-sizing: border-box;
+        }
+
+        form input[readonly] {
+            background-color: #eee;
+            cursor: not-allowed;
+        }
+
+        /* Buttons with gray gradient background */
+        form button {
+            margin-right: 0.5rem;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border: none;
+            color: #fff;
+            background: linear-gradient(to bottom, #9d9b9b, #4b4a4a);
+            font-size: 1rem;
+            border-radius: 4px;
+        }
+
+        form button:hover {
+            background: linear-gradient(to bottom, #8e8c8c, #403f3f);
+        }
+
+        .invoice-box {
+            border: 1px solid #ccc;
+            padding: 1rem;
+            background: #fafafa;
+            min-height: 400px;
+            overflow: auto;
+        }
+
+        .invoice-header,
+        .invoice-section {
+            margin-bottom: 1rem;
+        }
+
+        .invoice-header {
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 0.5rem;
+        }
+
+        .invoice-header h3 {
+            margin: 0;
+        }
+
+        .invoice-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .invoice-details>div {
+            min-width: 200px;
+            flex: 1 1 auto;
+        }
+
+        .history-container {
+            margin-top: 2rem;
+        }
+
+        #historyTable {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #historyTable th,
+        #historyTable td {
+            border: 1px solid #ccc;
+            padding: 0.5rem;
+            text-align: left;
+        }
+
+        #historyTable th {
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Invoice Generator</h1>
+        <div class="form-preview-container">
+            <!-- Form Container -->
+            <div class="form-container">
+                <form id="invoiceForm">
+                    <!-- Auto-generated invoice number (read-only) -->
+                    <label for="invoiceNumber">Invoice Number:</label>
+                    <input type="text" id="invoiceNumber" readonly />
+
+                    <!-- Current Date & Due Date on the same line -->
+                    <div style="display: flex; gap: 1rem;">
+                        <div style="flex:1;">
+                            <div class="error-message" id="invoiceDateError"></div>
+                            <label class="required" for="invoiceDate">Current Date:</label>
+                            <input type="date" id="invoiceDate" />
+                        </div>
+                        <div style="flex:1;">
+                            <div class="error-message" id="dueDateError"></div>
+                            <label class="required" for="dueDate">Due Date:</label>
+                            <input type="date" id="dueDate" />
+                        </div>
+                    </div>
+
+                    <h3>Your Information</h3>
+                    <div class="error-message" id="userNameError"></div>
+                    <label class="required" for="userName">Name/Company:</label>
+                    <input type="text" id="userName" />
+
+                    <div class="error-message" id="userEmailError"></div>
+                    <label class="required" for="userEmail">Email:</label>
+                    <input type="text" id="userEmail" />
+
+                    <div class="error-message" id="userPhoneError"></div>
+                    <label class="required" for="userPhone">Phone:</label>
+                    <input type="text" id="userPhone" />
+
+                    <div class="error-message" id="userAddressError"></div>
+                    <label class="required" for="userAddress">Address:</label>
+                    <textarea id="userAddress" rows="2"></textarea>
+
+                    <h3>Client Information</h3>
+                    <div class="error-message" id="clientNameError"></div>
+                    <label class="required" for="clientName">Name/Company:</label>
+                    <input type="text" id="clientName" />
+
+                    <div class="error-message" id="clientEmailError"></div>
+                    <label class="required" for="clientEmail">Email:</label>
+                    <input type="text" id="clientEmail" />
+
+                    <div class="error-message" id="clientPhoneError"></div>
+                    <label class="required" for="clientPhone">Phone:</label>
+                    <input type="text" id="clientPhone" />
+
+                    <div class="error-message" id="clientAddressError"></div>
+                    <label class="required" for="clientAddress">Address:</label>
+                    <textarea id="clientAddress" rows="2"></textarea>
+
+                    <h3>Service Details</h3>
+                    <div class="error-message" id="descriptionError"></div>
+                    <label class="required" for="description">Service Description:</label>
+                    <textarea id="description" rows="2"></textarea>
+
+                    <!-- Hours Worked & Rate on the same line -->
+                    <div style="display: flex; gap: 1rem;">
+                        <div style="flex:1;">
+                            <div class="error-message" id="hoursWorkedError"></div>
+                            <label class="required" for="hoursWorked">Hours Worked:</label>
+                            <input type="number" step="1" min="0" id="hoursWorked" />
+                        </div>
+                        <div style="flex:1;">
+                            <div class="error-message" id="rateError"></div>
+                            <label class="required" for="rate">Rate:</label>
+                            <input type="number" step="1" min="0" id="rate" />
+                        </div>
+                    </div>
+
+                    <!-- Tax Rate & Discount on the same line -->
+                    <div style="display: flex; gap: 1rem;">
+                        <div style="flex:1;">
+                            <div class="error-message" id="taxRateError"></div>
+                            <label class="required" for="taxRate">Tax Rate (%):</label>
+                            <input type="number" step="0.01" min="0" id="taxRate" />
+                        </div>
+                        <div style="flex:1;">
+                            <div class="error-message" id="discountError"></div>
+                            <label for="discount">Discount (amount):</label>
+                            <input type="number" step="0.01" id="discount" />
+                        </div>
+                    </div>
+
+                    <div class="error-message" id="notesError"></div>
+                    <label for="notes">Additional Notes:</label>
+                    <textarea id="notes" rows="2"></textarea>
+
+                    <button type="button" onclick="previewInvoice()">Preview Invoice</button>
+                    <button type="button" onclick="saveInvoice()">Save Invoice</button>
+                </form>
+            </div>
+
+            <!-- Preview Container -->
+            <div class="preview-container">
+                <div class="invoice-box" id="invoicePreview">
+                    <p style="text-align:center; color:#777;">Fill in the form and click "Preview Invoice" to see the
+                        result here.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Container -->
+        <div class="history-container">
+            <h2>Invoice History</h2>
+            <table id="historyTable">
+                <thead>
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Date</th>
+                        <th>Client</th>
+                        <th>Total</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Include html2canvas and jsPDF from CDN for PDF generation -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+    <script>
+        let invoiceHistory = [];
+        let nextInvoiceNumber = 1;
+        let currentInvoiceNumber = null;
+        let invoiceSaved = false;
+
+        window.addEventListener('load', () => {
+            loadHistory();
+            updateHistoryTable();
+            nextInvoiceNumber = invoiceHistory.length + 1;
+            setupNewInvoice();
+        });
+
+        function loadHistory() {
+            const storedHistory = localStorage.getItem('invoiceHistory');
+            if (storedHistory) {
+                invoiceHistory = JSON.parse(storedHistory);
+            } else {
+                invoiceHistory = [];
+            }
+        }
+
+        function saveHistory() {
+            localStorage.setItem('invoiceHistory', JSON.stringify(invoiceHistory));
+        }
+
+        function updateHistoryTable() {
+            const tableBody = document.querySelector('#historyTable tbody');
+            tableBody.innerHTML = '';
+            invoiceHistory.forEach((inv, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+        <td>${inv.invoiceNumber || ''}</td>
+        <td>${inv.invoiceDate || ''}</td>
+        <td>${inv.clientName || ''}</td>
+        <td>${formatCurrency(inv.totalDue) || ''}</td>
+        <td><button onclick="deleteInvoice(${index})">Delete</button></td>
+      `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function deleteInvoice(index) {
+            if (confirm('Are you sure you want to delete this invoice?')) {
+                invoiceHistory.splice(index, 1);
+                saveHistory();
+                updateHistoryTable();
+            }
+        }
+
+        function setupNewInvoice() {
+            invoiceSaved = false;
+            currentInvoiceNumber = nextInvoiceNumber;
+            nextInvoiceNumber++;
+
+            // Clear form
+            document.getElementById('invoiceForm').reset();
+
+            // Set the invoice number in the field
+            document.getElementById('invoiceNumber').value = currentInvoiceNumber.toString().padStart(2, '0');
+
+            // Clear preview
+            document.getElementById('invoicePreview').innerHTML = `
+      <p style="text-align:center; color:#777;">Fill in the form and click "Preview Invoice" to see the result here.</p>
+    `;
+        }
+
+        // Utility functions for showing/clearing errors
+        function showError(fieldId, message) {
+            const errorElement = document.getElementById(fieldId + 'Error');
+            if (errorElement) {
+                errorElement.textContent = message;
+            }
+        }
+
+        function clearError(fieldId) {
+            const errorElement = document.getElementById(fieldId + 'Error');
+            if (errorElement) {
+                errorElement.textContent = '';
+            }
+        }
+
+        // Validation
+        function validateForm() {
+            let valid = true;
+
+            // Get all fields
+            const invoiceDateField = document.getElementById('invoiceDate');
+            const dueDateField = document.getElementById('dueDate');
+            const userNameField = document.getElementById('userName');
+            const userEmailField = document.getElementById('userEmail');
+            const userPhoneField = document.getElementById('userPhone');
+            const userAddressField = document.getElementById('userAddress');
+            const clientNameField = document.getElementById('clientName');
+            const clientEmailField = document.getElementById('clientEmail');
+            const clientPhoneField = document.getElementById('clientPhone');
+            const clientAddressField = document.getElementById('clientAddress');
+            const descriptionField = document.getElementById('description');
+            const hoursWorkedField = document.getElementById('hoursWorked');
+            const rateField = document.getElementById('rate');
+            const taxRateField = document.getElementById('taxRate');
+            const discountField = document.getElementById('discount'); // not required
+            // notesField not required, no error check needed
+
+            // Clear old errors
+            clearError('invoiceDate');
+            clearError('dueDate');
+            clearError('userName');
+            clearError('userEmail');
+            clearError('userPhone');
+            clearError('userAddress');
+            clearError('clientName');
+            clearError('clientEmail');
+            clearError('clientPhone');
+            clearError('clientAddress');
+            clearError('description');
+            clearError('hoursWorked');
+            clearError('rate');
+            clearError('taxRate');
+            clearError('discount');
+
+            // Patterns
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const namePattern = /^[A-Za-z\s]+$/; // only letters and spaces
+            const phonePattern = /^[0-9]+$/;     // digits only
+
+            // Validate invoiceDate
+            const invoiceDateVal = invoiceDateField.value.trim();
+            if (!invoiceDateVal) {
+                showError('invoiceDate', 'Please select a current date.');
+                valid = false;
+            }
+
+            // Validate dueDate
+            const dueDateVal = dueDateField.value.trim();
+            if (!dueDateVal) {
+                showError('dueDate', 'Please select a due date.');
+                valid = false;
+            } else if (invoiceDateVal && dueDateVal) {
+                const invoiceDateObj = new Date(invoiceDateVal);
+                const dueDateObj = new Date(dueDateVal);
+                if (dueDateObj <= invoiceDateObj) {
+                    showError('dueDate', 'Due date must be after the current date.');
+                    valid = false;
+                }
+            }
+
+            // Validate userName (only letters/spaces)
+            const userNameVal = userNameField.value.trim();
+            if (!userNameVal) {
+                showError('userName', 'Please enter your name/company.');
+                valid = false;
+            } else if (!namePattern.test(userNameVal)) {
+                showError('userName', 'Name must contain only letters and spaces.');
+                valid = false;
+            }
+
+            // Validate userEmail
+            const userEmailVal = userEmailField.value.trim();
+            if (!userEmailVal) {
+                showError('userEmail', 'Please enter your email.');
+                valid = false;
+            } else if (!emailPattern.test(userEmailVal)) {
+                showError('userEmail', 'Please enter a valid email address.');
+                valid = false;
+            }
+
+            // Validate userPhone (digits only)
+            const userPhoneVal = userPhoneField.value.trim();
+            if (!userPhoneVal) {
+                showError('userPhone', 'Please enter your phone number.');
+                valid = false;
+            } else if (!phonePattern.test(userPhoneVal)) {
+                showError('userPhone', 'Phone must contain only digits.');
+                valid = false;
+            }
+
+            // Validate userAddress
+            if (!userAddressField.value.trim()) {
+                showError('userAddress', 'Please enter your address.');
+                valid = false;
+            }
+
+            // Validate clientName (only letters/spaces)
+            const clientNameVal = clientNameField.value.trim();
+            if (!clientNameVal) {
+                showError('clientName', 'Please enter the client name/company.');
+                valid = false;
+            } else if (!namePattern.test(clientNameVal)) {
+                showError('clientName', 'Name must contain only letters and spaces.');
+                valid = false;
+            }
+
+            // Validate clientEmail
+            const clientEmailVal = clientEmailField.value.trim();
+            if (!clientEmailVal) {
+                showError('clientEmail', 'Please enter the client email.');
+                valid = false;
+            } else if (!emailPattern.test(clientEmailVal)) {
+                showError('clientEmail', 'Please enter a valid email address.');
+                valid = false;
+            }
+
+            // Validate clientPhone (digits only)
+            const clientPhoneVal = clientPhoneField.value.trim();
+            if (!clientPhoneVal) {
+                showError('clientPhone', 'Please enter the client phone number.');
+                valid = false;
+            } else if (!phonePattern.test(clientPhoneVal)) {
+                showError('clientPhone', 'Phone must contain only digits.');
+                valid = false;
+            }
+
+            // Validate clientAddress
+            if (!clientAddressField.value.trim()) {
+                showError('clientAddress', 'Please enter the client address.');
+                valid = false;
+            }
+
+            // Validate description
+            if (!descriptionField.value.trim()) {
+                showError('description', 'Please enter a service description.');
+                valid = false;
+            }
+
+            // Validate hoursWorked
+            const hoursWorkedVal = hoursWorkedField.value.trim();
+            if (!hoursWorkedVal) {
+                showError('hoursWorked', 'Please enter hours worked.');
+                valid = false;
+            } else {
+                const hours = parseInt(hoursWorkedVal, 10);
+                if (isNaN(hours) || hours < 0) {
+                    showError('hoursWorked', 'Hours worked must be a non-negative integer.');
+                    valid = false;
+                }
+            }
+
+            // Validate rate
+            const rateVal = rateField.value.trim();
+            if (!rateVal) {
+                showError('rate', 'Please enter the rate.');
+                valid = false;
+            } else {
+                const rateInt = parseInt(rateVal, 10);
+                if (isNaN(rateInt) || rateInt < 0) {
+                    showError('rate', 'Rate must be a non-negative integer.');
+                    valid = false;
+                }
+            }
+
+            // Validate taxRate
+            const taxRateVal = taxRateField.value.trim();
+            if (!taxRateVal) {
+                showError('taxRate', 'Please enter a tax rate.');
+                valid = false;
+            } else {
+                const taxFloat = parseFloat(taxRateVal);
+                if (isNaN(taxFloat) || taxFloat < 0) {
+                    showError('taxRate', 'Tax rate must be a non-negative number.');
+                    valid = false;
+                }
+            }
+
+            // Validate discount (not required, but check negative)
+            const discountVal = discountField.value.trim();
+            if (discountVal) {
+                const discountFloat = parseFloat(discountVal);
+                if (isNaN(discountFloat) || discountFloat < 0) {
+                    showError('discount', 'Discount cannot be negative.');
+                    valid = false;
+                }
+            }
+
+            return valid;
+        }
+
+        function getCurrentInvoiceNumberFormatted() {
+            return currentInvoiceNumber.toString().padStart(2, '0');
+        }
+
+        function previewInvoice() {
+            if (!validateForm()) return;
+
+            const invoiceDate = document.getElementById('invoiceDate').value;
+            const dueDate = document.getElementById('dueDate').value;
+            const userName = document.getElementById('userName').value.trim();
+            const userEmail = document.getElementById('userEmail').value.trim();
+            const userPhone = document.getElementById('userPhone').value.trim();
+            const userAddress = document.getElementById('userAddress').value.trim();
+            const clientName = document.getElementById('clientName').value.trim();
+            const clientEmail = document.getElementById('clientEmail').value.trim();
+            const clientPhone = document.getElementById('clientPhone').value.trim();
+            const clientAddress = document.getElementById('clientAddress').value.trim();
+            const description = document.getElementById('description').value.trim();
+            const hoursWorked = parseInt(document.getElementById('hoursWorked').value) || 0;
+            const rate = parseInt(document.getElementById('rate').value) || 0;
+            const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
+            const discount = parseFloat(document.getElementById('discount').value) || 0;
+            const notes = document.getElementById('notes').value.trim();
+
+            const subtotal = hoursWorked * rate;
+            const taxAmount = subtotal * (taxRate / 100);
+            const totalDue = subtotal + taxAmount - discount;
+
+            const preview = `
+      <div class="invoice-header">
+        <h3>Invoice #${getCurrentInvoiceNumberFormatted()}</h3>
+      </div>
+      <div class="invoice-section invoice-details">
+        <div>
+          <strong>Date:</strong> ${invoiceDate || ''}
+        </div>
+        <div>
+          <strong>Due Date:</strong> ${dueDate || ''}
+        </div>
+      </div>
+      <div class="invoice-section">
+        <h4>From:</h4>
+        <p>
+          <strong>${userName || ''}</strong><br>
+          Email: ${userEmail || ''}<br>
+          Phone: ${userPhone || ''}<br>
+          ${(userAddress || '').replace(/\n/g, '<br>')}
+        </p>
+      </div>
+      <div class="invoice-section">
+        <h4>Bill To:</h4>
+        <p>
+          <strong>${clientName || ''}</strong><br>
+          Email: ${clientEmail || ''}<br>
+          Phone: ${clientPhone || ''}<br>
+          ${(clientAddress || '').replace(/\n/g, '<br>')}
+        </p>
+      </div>
+      <div class="invoice-section">
+        <h4>Description of Services:</h4>
+        <p>${description || ''}</p>
+      </div>
+      <div class="invoice-section invoice-details">
+        <div><strong>Hours Worked:</strong> ${hoursWorked}</div>
+        <div><strong>Rate:</strong> ${formatCurrency(rate)}</div>
+        <div><strong>Subtotal:</strong> ${formatCurrency(subtotal)}</div>
+        <div><strong>Tax Rate:</strong> ${taxRate.toFixed(2)}%</div>
+        <div><strong>Tax Amount:</strong> ${formatCurrency(taxAmount)}</div>
+        <div><strong>Discount:</strong> ${formatCurrency(discount)}</div>
+        <div><strong>Total Due:</strong> ${formatCurrency(totalDue)}</div>
+      </div>
+      <div class="invoice-section">
+        <h4>Additional Notes:</h4>
+        <p>${notes || ''}</p>
+      </div>
+    `;
+            document.getElementById('invoicePreview').innerHTML = preview;
+        }
+
+        function saveInvoice() {
+            if (invoiceSaved) {
+                // Already saved this invoice; do nothing
+                return;
+            }
+            if (!validateForm()) return;
+
+            const invoiceDate = document.getElementById('invoiceDate').value;
+            const dueDate = document.getElementById('dueDate').value;
+            const userName = document.getElementById('userName').value.trim();
+            const userEmail = document.getElementById('userEmail').value.trim();
+            const userPhone = document.getElementById('userPhone').value.trim();
+            const userAddress = document.getElementById('userAddress').value.trim();
+            const clientName = document.getElementById('clientName').value.trim();
+            const clientEmail = document.getElementById('clientEmail').value.trim();
+            const clientPhone = document.getElementById('clientPhone').value.trim();
+            const clientAddress = document.getElementById('clientAddress').value.trim();
+            const description = document.getElementById('description').value.trim();
+            const hoursWorked = parseInt(document.getElementById('hoursWorked').value) || 0;
+            const rate = parseInt(document.getElementById('rate').value) || 0;
+            const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
+            const discount = parseFloat(document.getElementById('discount').value) || 0;
+            const notes = document.getElementById('notes').value.trim();
+
+            const subtotal = hoursWorked * rate;
+            const taxAmount = subtotal * (taxRate / 100);
+            const totalDue = subtotal + taxAmount - discount;
+
+            const invoiceObj = {
+                invoiceNumber: getCurrentInvoiceNumberFormatted(),
+                invoiceDate,
+                dueDate,
+                userName,
+                userEmail,
+                userPhone,
+                userAddress,
+                clientName,
+                clientEmail,
+                clientPhone,
+                clientAddress,
+                description,
+                hoursWorked,
+                rate,
+                taxRate,
+                discount,
+                taxAmount,
+                subtotal,
+                totalDue,
+                notes
+            };
+
+            // Ensure preview is up-to-date
+            previewInvoice();
+
+            // Save to history
+            invoiceHistory.push(invoiceObj);
+            saveHistory();
+            updateHistoryTable();
+
+            // Mark as saved
+            invoiceSaved = true;
+
+            // Download PDF
+            downloadInvoicePDF(invoiceObj);
+
+            alert('Invoice saved and PDF downloaded!');
+
+            // Prepare a new invoice form
+            setupNewInvoice();
+        }
+
+        function downloadInvoicePDF(invoiceObj) {
+            const invoiceElement = document.getElementById('invoicePreview');
+            if (!invoiceElement) return;
+
+            html2canvas(invoiceElement).then((canvas) => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'pt', 'a4');
+
+                const imgProps = pdf.getImageProperties(imgData);
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`Invoice_${invoiceObj.invoiceNumber}.pdf`);
+            });
+        }
+
+        function formatCurrency(value) {
+            return `$${value.toFixed(2)}`;
+        }
+    </script>
+</body>
+
+</html>

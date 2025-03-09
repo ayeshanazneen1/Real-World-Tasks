@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Draggable Marker and Eraser with Shapes Store</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Dark brown background */
+        body {
+            background: #4a2e12;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* Constrain the whiteboard area so absolute positioning inside it is predictable */
+        .whiteboard-container {
+            position: relative;
+            width: 700px;
+            /* match canvas width */
+            height: 400px;
+            /* match canvas height */
+        }
+
+        /* The whiteboard canvas */
+        #whiteboard {
+            background: #fff;
+            border-radius: 5px;
+            width: 700px;
+            height: 400px;
+            border: 4px solid #006400;
+            box-shadow:
+                0 0 0 8px #FFD700,
+                0 0 0 12px #006400;
+        }
+
+        /*
+     * When in shape mode, show a crosshair cursor (like a big plus)
+     */
+        #whiteboard.shape-mode {
+            cursor: crosshair;
+        }
+
+        /*
+     * Marker (horizontal) with:
+     * - Dark brown back (rectangle)
+     * - Yellow-brown front (triangle tip)
+     * Placed at the bottom, just above the outline
+     */
+        .marker-shape {
+            position: absolute;
+            width: 60px;
+            height: 20px;
+            bottom: 10px;
+            left: 200px;
+            cursor: grab;
+            z-index: 2;
+            display: flex;
+            /* So the two parts line up horizontally */
+        }
+
+        /* Dark brown rectangle (back) */
+        .marker-back {
+            width: 45px;
+            height: 20px;
+            background: #654321;
+        }
+
+        /* Yellow-brown triangle tip (front) */
+        .marker-front {
+            width: 0;
+            height: 0;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-left: 15px solid #C8A165;
+            /* Triangle tip */
+        }
+
+        /*
+     * Eraser shaped like a 3D block (simple perspective),
+     * placed at the bottom, just above the outline
+     */
+        .eraser-shape {
+            position: absolute;
+            width: 40px;
+            height: 20px;
+            bottom: 10px;
+            left: 280px;
+            cursor: grab;
+            z-index: 2;
+            background: #fff;
+            border: 2px solid #ccc;
+            transform: perspective(200px) rotateX(15deg);
+            transform-origin: bottom;
+        }
+
+        /* The store container for shapes, marker color, and eraser size */
+        .store-container {
+            width: 220px;
+            background: #fff;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            z-index: 3;
+            /* Ensure it's above the canvas if overlapping */
+        }
+
+        .store-container h2 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .store-container label {
+            display: block;
+            margin: 10px 0;
+        }
+
+        .store-container label input[type="color"],
+        .store-container label input[type="range"] {
+            margin-left: 5px;
+        }
+
+        .shape {
+            background: #eee;
+            margin-bottom: 10px;
+            padding: 8px;
+            text-align: center;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .shape:hover {
+            background: #ddd;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Whiteboard Section -->
+        <div class="whiteboard-container">
+            <canvas id="whiteboard" width="700" height="400"></canvas>
+
+            <!-- Marker (horizontal) -->
+            <div class="marker-shape" id="markerShape">
+                <div class="marker-back"></div>
+                <div class="marker-front"></div>
+            </div>
+
+            <!-- Eraser (3D block) -->
+            <div class="eraser-shape" id="eraserShape"></div>
+        </div>
+
+        <!-- Shapes Store and Marker/Eraser Controls -->
+        <div class="store-container">
+            <h2>Tools & Shapes</h2>
+
+            <label for="colorPicker">
+                Marker Color:
+                <input type="color" id="colorPicker" value="#000000" />
+            </label>
+
+            <label for="eraserSize">
+                Eraser Size:
+                <input type="range" id="eraserSize" min="5" max="50" value="10" />
+            </label>
+
+            <h3>Shapes</h3>
+            <div class="shape" data-shape="rectangle">Rectangle</div>
+            <div class="shape" data-shape="circle">Circle</div>
+            <div class="shape" data-shape="triangle">Triangle</div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('whiteboard');
+        const ctx = canvas.getContext('2d');
+
+        // Keep track of the canvas's position for coordinate conversions
+        let canvasRect = canvas.getBoundingClientRect();
+
+        // Marker color and eraser size
+        let markerColor = '#000000';
+        let eraserSize = 10;
+
+        // Tool for placing shapes
+        let currentTool = null; // 'shape' if placing shapes
+        let currentShape = null;
+
+        // Marker references
+        const marker = document.getElementById('markerShape');
+        const markerWidth = 60;
+        const markerHeight = 20;
+        let isDraggingMarker = false;
+        let markerTipOffsetX = 0; // offset so the tip lines up with the mouse
+        let markerTipOffsetY = 0;
+        let markerLastX = null; // last x in canvas coords
+        let markerLastY = null; // last y in canvas coords
+        let markerInitialLeft = 0;
+        let markerInitialTop = 0;
+
+        // Eraser references
+        const eraser = document.getElementById('eraserShape');
+        const eraserWidth = 40;
+        const eraserHeight = 20;
+        let isDraggingEraser = false;
+        let eraserCenterOffsetX = 0;
+        let eraserCenterOffsetY = 0;
+        let eraserLastX = null;
+        let eraserLastY = null;
+        let eraserInitialLeft = 0;
+        let eraserInitialTop = 0;
+
+        // Check if a point is inside the canvas
+        function isInsideCanvas(x, y) {
+            return (x >= 0 && x <= canvas.width && y >= 0 && y <= canvas.height);
+        }
+
+        // Setup the drawing context
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+
+        // Marker color picker
+        document.getElementById('colorPicker').addEventListener('input', (e) => {
+            markerColor = e.target.value;
+        });
+
+        // Eraser size
+        document.getElementById('eraserSize').addEventListener('input', (e) => {
+            eraserSize = parseInt(e.target.value, 10);
+        });
+
+        // Shape selection from the store
+        document.querySelectorAll('.shape').forEach(shapeEl => {
+            shapeEl.addEventListener('click', () => {
+                currentTool = 'shape';
+                currentShape = shapeEl.getAttribute('data-shape');
+                // Enable shape-mode cursor on the canvas
+                canvas.classList.add('shape-mode');
+            });
+        });
+
+        // Place shapes on canvas click (when in shape mode)
+        canvas.addEventListener('mousedown', (e) => {
+            if (currentTool === 'shape' && currentShape) {
+                ctx.globalCompositeOperation = 'source-over';
+                const x = e.offsetX;
+                const y = e.offsetY;
+
+                ctx.fillStyle = markerColor;
+                ctx.strokeStyle = markerColor;
+
+                switch (currentShape) {
+                    case 'rectangle':
+                        ctx.fillRect(x - 50, y - 25, 100, 50);
+                        break;
+                    case 'circle':
+                        ctx.beginPath();
+                        ctx.arc(x, y, 30, 0, 2 * Math.PI);
+                        ctx.fill();
+                        break;
+                    case 'triangle':
+                        ctx.beginPath();
+                        ctx.moveTo(x, y - 30);
+                        ctx.lineTo(x - 30, y + 30);
+                        ctx.lineTo(x + 30, y + 30);
+                        ctx.closePath();
+                        ctx.fill();
+                        break;
+                }
+                // Keep shape mode on if user wants to place multiple shapes
+                // If you'd like to place only one shape per selection, uncomment below:
+                // currentTool = null;
+                // currentShape = null;
+                // canvas.classList.remove('shape-mode');
+            }
+        });
+
+        // ---------------------------
+        // Draggable Marker
+        // ---------------------------
+        marker.addEventListener('mousedown', (e) => {
+            // Disable shape mode if active
+            currentTool = null;
+            currentShape = null;
+            canvas.classList.remove('shape-mode');
+
+            isDraggingMarker = true;
+            marker.style.cursor = 'grabbing';
+
+            const markerRect = marker.getBoundingClientRect();
+            const tipX = markerRect.right;
+            const tipY = markerRect.top + markerRect.height / 2;
+
+            markerTipOffsetX = e.clientX - tipX;
+            markerTipOffsetY = e.clientY - tipY;
+
+            markerLastX = null;
+            markerLastY = null;
+        });
+
+        // ---------------------------
+        // Draggable Eraser
+        // ---------------------------
+        eraser.addEventListener('mousedown', (e) => {
+            // Disable shape mode if active
+            currentTool = null;
+            currentShape = null;
+            canvas.classList.remove('shape-mode');
+
+            isDraggingEraser = true;
+            eraser.style.cursor = 'grabbing';
+
+            const eraserRect = eraser.getBoundingClientRect();
+            const centerX = eraserRect.left + eraserRect.width / 2;
+            const centerY = eraserRect.top + eraserRect.height / 2;
+
+            eraserCenterOffsetX = e.clientX - centerX;
+            eraserCenterOffsetY = e.clientY - centerY;
+
+            eraserLastX = null;
+            eraserLastY = null;
+        });
+
+        // ---------------------------
+        // Mouse move (document-level) for dragging
+        // ---------------------------
+        document.addEventListener('mousemove', (e) => {
+
+            const canvasRect = canvas.getBoundingClientRect();
+            const container = document.querySelector('.whiteboard-container');
+            const containerRect = container.getBoundingClientRect();
+
+            // Marker dragging
+            if (isDraggingMarker) {
+                // We want the tip to be at the mouse pointer
+                // So the tip's new position = (e.clientX, e.clientY)
+                // The marker's left = tipX - markerWidth
+                // The marker's top = tipY - markerHeight/2
+                const newTipX = e.clientX - markerTipOffsetX;
+                const newTipY = e.clientY - markerTipOffsetY;
+
+                const relativeLeft = newTipX - containerRect.left - markerWidth;
+                const relativeTop = newTipY - containerRect.top - (markerHeight / 2);
+                marker.style.left = relativeLeft + 'px';
+                marker.style.top = relativeTop + 'px';
+
+                const computedStyle = window.getComputedStyle(canvas);
+                const borderLeftWidth = parseFloat(computedStyle.borderLeftWidth);
+                const borderTopWidth = parseFloat(computedStyle.borderTopWidth);
+
+                const tipCanvasX = newTipX - canvasRect.left - borderLeftWidth;
+                const tipCanvasY = newTipY - canvasRect.top - borderTopWidth;
+
+                if (isInsideCanvas(tipCanvasX, tipCanvasY)) {
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.strokeStyle = markerColor;
+                    ctx.lineWidth = 2;
+
+                    ctx.beginPath();
+                    if (markerLastX !== null && markerLastY !== null) {
+                        ctx.moveTo(markerLastX, markerLastY);
+                        ctx.lineTo(tipCanvasX, tipCanvasY);
+                        ctx.stroke();
+                    }
+                    markerLastX = tipCanvasX;
+                    markerLastY = tipCanvasY;
+                } else {
+                    markerLastX = null;
+                    markerLastY = null;
+                }
+            }
+
+            // Eraser dragging
+            if (isDraggingEraser) {
+                // The eraser's center follows the mouse
+                // newCenterX = e.clientX - eraserCenterOffsetX
+                // newCenterY = e.clientY - eraserCenterOffsetY
+                // so the top-left is newCenterX - eraserWidth/2, newCenterY - eraserHeight/2
+                const newCenterX = e.clientX - eraserCenterOffsetX;
+                const newCenterY = e.clientY - eraserCenterOffsetY;
+
+                const relativeLeft = newCenterX - containerRect.left - (eraserWidth / 2);
+                const relativeTop = newCenterY - containerRect.top - (eraserHeight / 2);
+                eraser.style.left = relativeLeft + 'px';
+                eraser.style.top = relativeTop + 'px';
+
+                const computedStyle = window.getComputedStyle(canvas);
+                const borderLeftWidth = parseFloat(computedStyle.borderLeftWidth);
+                const borderTopWidth = parseFloat(computedStyle.borderTopWidth);
+
+                const eraseX = newCenterX - canvasRect.left - borderLeftWidth;
+                const eraseY = newCenterY - canvasRect.top - borderTopWidth;
+
+                if (isInsideCanvas(eraseX, eraseY)) {
+                    ctx.globalCompositeOperation = 'destination-out';
+                    ctx.lineWidth = eraserSize;
+
+                    ctx.beginPath();
+                    if (eraserLastX !== null && eraserLastY !== null) {
+                        ctx.moveTo(eraserLastX, eraserLastY);
+                        ctx.lineTo(eraseX, eraseY);
+                        ctx.stroke();
+                    }
+                    eraserLastX = eraseX;
+                    eraserLastY = eraseY;
+                } else {
+                    eraserLastX = null;
+                    eraserLastY = null;
+                }
+            }
+        });
+
+        // ---------------------------
+        // Mouse up stops dragging and snaps back
+        // ---------------------------
+        document.addEventListener('mouseup', () => {
+            if (isDraggingMarker) {
+                isDraggingMarker = false;
+                marker.style.cursor = 'grab';
+                markerLastX = null;
+                markerLastY = null;
+                // Snap back
+                marker.style.left = markerInitialLeft + 'px';
+                marker.style.top = markerInitialTop + 'px';
+            }
+            if (isDraggingEraser) {
+                isDraggingEraser = false;
+                eraser.style.cursor = 'grab';
+                eraserLastX = null;
+                eraserLastY = null;
+                // Snap back
+                eraser.style.left = eraserInitialLeft + 'px';
+                eraser.style.top = eraserInitialTop + 'px';
+            }
+        });
+
+        // ---------------------------
+        // On window load, record the initial positions
+        // ---------------------------
+        window.addEventListener('load', () => {
+            markerInitialLeft = marker.offsetLeft;
+            markerInitialTop = marker.offsetTop;
+            eraserInitialLeft = eraser.offsetLeft;
+            eraserInitialTop = eraser.offsetTop;
+        });
+
+        // Update bounding rect if window is resized
+        window.addEventListener('resize', () => {
+            canvasRect = canvas.getBoundingClientRect();
+        });
+    </script>
+</body>
+
+</html>

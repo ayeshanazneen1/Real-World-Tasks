@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Card Matching Game</title>
+    <!-- Import Moon Dance font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Moon+Dance&display=swap" rel="stylesheet">
+
+    <style>
+        /* Basic reset and body styling */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom right, #A2D2FF, #CDB4DB);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column; 
+            align-items: center;
+            justify-content: flex-start;
+            margin-top: 5px;
+        }
+
+        /* Main container in the center with a darker gradient background */
+        #main-container {
+            width: 80%;
+            max-width: 600px;
+            min-height: 500px;
+            margin: auto;
+            border-radius: 12px;
+            /* Darker version of the page background gradient */
+            background: linear-gradient(to bottom right, #6A9CCF, #9E7DA5);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px 20px 20px;
+        }
+
+        /* Title in Moon Dance font, at the top of the container */
+        #game-title {
+            top: auto;
+            font-family: 'Moon Dance', cursive;
+            font-size: 3rem;
+            color: #fff;
+            text-align: center;
+            margin: 20px;
+        }
+
+        /* Level name in top-left corner, hidden by default */
+        #level-name {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: bold;
+            display: none;
+            /* hidden until a level is selected */
+        }
+
+        /* Timer in top-right corner, hidden by default */
+        #timer-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: bold;
+            display: none;
+            /* hidden until a level is selected */
+        }
+
+        /* Sections inside the container */
+        #difficulty-selection,
+        #game-area,
+        #result-section {
+            width: 100%;
+            text-align: center;
+            display: none;
+        }
+
+        #difficulty-selection.active,
+        #game-area.active,
+        #result-section.active {
+            display: block;
+        }
+
+        /* Difficulty selection buttons */
+        .difficulty-btn {
+            background-color: #fff;
+            color: #333;
+            border: 2px solid #333;
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: 0.3s;
+            border-radius: 6px;
+        }
+
+        .difficulty-btn:hover {
+            background-color: #333;
+            color: #fff;
+        }
+
+        /* Cards container and card styling */
+        #cards-container {
+            display: grid;
+            gap: 5px;
+            justify-content: center;
+            margin: 20px auto 0 auto;
+        }
+
+        /* Grid templates for each difficulty */
+        .easy-grid {
+            grid-template-columns: repeat(4, auto);
+        }
+
+        .medium-grid {
+            grid-template-columns: repeat(5, auto);
+        }
+
+        .hard-grid {
+            grid-template-columns: repeat(6, auto);
+        }
+
+        /* Card sizes for different levels */
+        .card.easy-size {
+            width: 80px;
+            height: 100px;
+        }
+
+        .card.medium-size {
+            width: 65px;
+            height: 85px;
+        }
+
+        .card.hard-size {
+            width: 50px;
+            height: 70px;
+        }
+
+        .card {
+            perspective: 600px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.5s;
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            user-select: none;
+        }
+
+        /* Patterned back of the card */
+        .card-back {
+            background: repeating-linear-gradient(45deg,
+                    #f7f7f7,
+                    #f7f7f7 10px,
+                    #dddddd 10px,
+                    #dddddd 20px);
+        }
+
+        .card-front {
+            background-color: #FFAFCC;
+            transform: rotateY(180deg);
+        }
+
+        /* Blank card front (for the extra card in medium) */
+        .card-front.blank {
+            background-color: #fff;
+            /* A plain white card */
+        }
+
+        /* Result section styling */
+        #result-section h2 {
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .result-message {
+            font-size: 1.2rem;
+            margin: 20px 0;
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <h1 id="game-title">Card Matching Game</h1>
+    <div id="main-container">
+
+        <!-- Level name (top-left, hidden by default) -->
+        <div id="level-name"></div>
+
+        <!-- Timer (top-right, hidden by default) -->
+        <div id="timer-container">
+            <span id="time-remaining"></span>
+        </div>
+
+        <!-- Difficulty Selection -->
+        <div id="difficulty-selection" class="active">
+            <button class="difficulty-btn" onclick="startGame('easy')">Easy</button>
+            <button class="difficulty-btn" onclick="startGame('medium')">Medium</button>
+            <button class="difficulty-btn" onclick="startGame('hard')">Hard</button>
+        </div>
+
+        <!-- Game Area -->
+        <div id="game-area">
+            <div id="cards-container"></div>
+        </div>
+
+        <!-- Result Section -->
+        <div id="result-section">
+            <h2 id="result-title"></h2>
+            <p class="result-message" id="result-message"></p>
+            <button class="difficulty-btn" onclick="goToMenu()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // List of emojis (toys, fruits, vegetables).
+        const allEmojis = [
+            "🧸", "🤖", "🚗", "🏀", "🧩", "🚲", "🚁", "🚂",
+            "🍎", "🍌", "🍒", "🍓", "🍇", "🍉", "🍑", "🍍",
+            "🥕", "🥦", "🥔", "🌽", "🍅", "🍆", "🥒", "🌶"
+        ];
+
+        // Game settings (in seconds)
+        const levelSettings = {
+            easy: { gridSize: 4, timeLimit: 120 }, // 2 minutes, 16 cards -> 8 pairs
+            medium: { gridSize: 5, timeLimit: 150 }, // 2.5 minutes, 25 cards -> 12 pairs + 1 blank
+            hard: { gridSize: 6, timeLimit: 180 }  // 3 minutes, 36 cards -> 18 pairs
+        };
+
+        // DOM references
+        const difficultySelection = document.getElementById('difficulty-selection');
+        const gameArea = document.getElementById('game-area');
+        const resultSection = document.getElementById('result-section');
+        const cardsContainer = document.getElementById('cards-container');
+        const timeDisplay = document.getElementById('time-remaining');
+        const resultTitle = document.getElementById('result-title');
+        const resultMessage = document.getElementById('result-message');
+        const levelName = document.getElementById('level-name');
+        const timerContainer = document.getElementById('timer-container');
+
+        let chosenLevel = null;
+        let firstCard = null;
+        let secondCard = null;
+        let lockBoard = false;
+        let matchedPairs = 0;
+        let totalPairs = 0;     // total pairs needed to win
+        let timeRemaining = 0;
+        let timerInterval = null;
+
+        function startGame(level) {
+            chosenLevel = level;
+
+            // Hide difficulty selection, show game area, hide result if it was visible
+            difficultySelection.classList.remove('active');
+            gameArea.classList.add('active');
+            resultSection.classList.remove('active');
+
+            // Show level name in top-left and timer in top-right
+            levelName.style.display = 'block';
+            timerContainer.style.display = 'block';
+            levelName.textContent = capitalizeFirstLetter(level);
+
+            setupBoard(level);
+            startTimer(level);
+        }
+
+        function setupBoard(level) {
+            cardsContainer.innerHTML = "";
+            matchedPairs = 0;
+            firstCard = null;
+            secondCard = null;
+            lockBoard = false;
+
+            const { gridSize } = levelSettings[level];
+
+            // Clear any previous grid classes
+            cardsContainer.className = "";
+
+            // Add the appropriate grid class
+            if (level === 'easy') {
+                cardsContainer.classList.add('easy-grid');
+            } else if (level === 'medium') {
+                cardsContainer.classList.add('medium-grid');
+            } else {
+                cardsContainer.classList.add('hard-grid');
+            }
+
+            // For easy: 16 cards -> 8 pairs
+            // For medium: 25 cards -> 12 pairs + 1 blank card
+            // For hard: 36 cards -> 18 pairs
+
+            if (level === 'easy') {
+                totalPairs = 8;
+            } else if (level === 'medium') {
+                totalPairs = 12; // plus 1 blank card
+            } else if (level === 'hard') {
+                totalPairs = 18;
+            }
+
+            // Generate the cards
+            const cardElements = generateCards(level);
+            // Append them to container
+            cardElements.forEach(card => cardsContainer.appendChild(card));
+        }
+
+        function generateCards(level) {
+            // We'll generate the appropriate pairs, then add the extra blank for medium if needed
+            let neededPairs = totalPairs; // e.g., 8 for easy, 12 for medium, 18 for hard
+
+            // Shuffle all emojis
+            const shuffled = [...allEmojis].sort(() => 0.5 - Math.random());
+            // Pick the number of emojis needed
+            const selected = shuffled.slice(0, neededPairs);
+            // Duplicate them to form pairs
+            let pairs = [...selected, ...selected];
+
+            // For medium, we add one blank card
+            if (level === 'medium') {
+                pairs.push("BLANK_CARD"); // We'll handle this as a special blank card
+            }
+
+            // Shuffle the final list of cards
+            pairs = pairs.sort(() => 0.5 - Math.random());
+
+            // Create card elements
+            return pairs.map(emoji => createCardElement(emoji, level));
+        }
+
+        function createCardElement(emoji, level) {
+            // Create the card element
+            const card = document.createElement('div');
+            card.classList.add('card');
+            if (level === 'easy') card.classList.add('easy-size');
+            if (level === 'medium') card.classList.add('medium-size');
+            if (level === 'hard') card.classList.add('hard-size');
+
+            const cardInner = document.createElement('div');
+            cardInner.classList.add('card-inner');
+
+            const cardBack = document.createElement('div');
+            cardBack.classList.add('card-face', 'card-back');
+
+            const cardFront = document.createElement('div');
+            cardFront.classList.add('card-face', 'card-front');
+
+            // If this is the blank card for medium level
+            if (emoji === "BLANK_CARD") {
+                // Give it a special data attribute that won't match anything
+                card.dataset.emoji = "blank";
+                // Make the front plain white
+                cardFront.classList.add('blank');
+            } else {
+                // Normal emoji
+                card.dataset.emoji = emoji;
+                cardFront.textContent = emoji;
+            }
+
+            cardInner.appendChild(cardBack);
+            cardInner.appendChild(cardFront);
+            card.appendChild(cardInner);
+
+            card.addEventListener('click', flipCard);
+            return card;
+        }
+
+        function flipCard() {
+            if (lockBoard) return;
+            if (this === firstCard) return;
+
+            this.classList.add('flipped');
+
+            if (!firstCard) {
+                firstCard = this;
+                return;
+            }
+
+            secondCard = this;
+            lockBoard = true;
+            checkForMatch();
+        }
+
+        function checkForMatch() {
+            const isMatch = firstCard.dataset.emoji === secondCard.dataset.emoji;
+            if (isMatch && firstCard.dataset.emoji !== "blank") {
+                // It's a match (and not the blank card)
+                disableCards();
+            } else {
+                // No match or it's the blank card scenario
+                unflipCards();
+            }
+        }
+
+        function disableCards() {
+            firstCard.removeEventListener('click', flipCard);
+            secondCard.removeEventListener('click', flipCard);
+            matchedPairs++;
+            resetBoard();
+
+            // Check if all pairs are matched
+            if (matchedPairs === totalPairs) {
+                setTimeout(() => {
+                    endGame(true);
+                }, 600);
+            }
+        }
+
+        function unflipCards() {
+            setTimeout(() => {
+                firstCard.classList.remove('flipped');
+                secondCard.classList.remove('flipped');
+                resetBoard();
+            }, 1000);
+        }
+
+        function resetBoard() {
+            [firstCard, secondCard] = [null, null];
+            lockBoard = false;
+        }
+
+        function startTimer(level) {
+            const { timeLimit } = levelSettings[level];
+            timeRemaining = timeLimit;
+            timeDisplay.textContent = timeRemaining + "s";
+
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                timeDisplay.textContent = timeRemaining + "s";
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    endGame(false);
+                }
+            }, 1000);
+        }
+
+        function endGame(isWin) {
+            clearInterval(timerInterval);
+            // Hide game area, show result
+            gameArea.classList.remove('active');
+            resultSection.classList.add('active');
+
+            if (isWin) {
+                resultTitle.textContent = "Congratulations!";
+                resultMessage.textContent = "You matched all the cards in time!";
+            } else {
+                resultTitle.textContent = "Time's Up!";
+                resultMessage.textContent = "Better luck next time.";
+            }
+        }
+
+        function goToMenu() {
+            // Hide result, show difficulty selection
+            resultSection.classList.remove('active');
+            difficultySelection.classList.add('active');
+            // Hide level name and timer
+            levelName.style.display = 'none';
+            timerContainer.style.display = 'none';
+            levelName.textContent = "";
+        }
+
+        function capitalizeFirstLetter(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+    </script>
+</body>
+
+</html>
