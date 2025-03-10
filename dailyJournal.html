@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Daily Journal</title>
+    <!-- Import Moon Dance font from Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Moon+Dance&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #f8e6ff;
+            /* Light purple background */
+            color: #333;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Title Container (Top Center) */
+        #title-container {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        #title-container h1 {
+            margin: 0;
+            color: #5e2c7a;
+            /* Dark purple color for title */
+            font-family: 'Moon Dance', cursive;
+            /* Moon Dance font */
+            font-size: 3rem;
+        }
+
+        /* Date Container */
+        #date-container {
+            display: flex;
+            align-items: flex-start;
+            max-width: 1200px;
+            margin: 1rem auto;
+            padding: 0 1rem;
+            gap: 1rem;
+        }
+
+        #date-container label {
+            font-weight: bold;
+            display: block;
+            margin-right: 0.5rem;
+            margin-bottom: 0.25rem;
+            color: #5e2c7a;
+        }
+
+        #date-container input[type="date"] {
+            padding: 0.4rem;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        /* Quote Container (auto adjusts to content, same bg + outline) */
+        #quote-container {
+            height: 220px;
+            width: 200px;
+            background: #f8e6ff;
+            border: 2px solid #dcaefb;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-left: 30rem;
+        }
+
+        #goal-and-quote-container {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            max-width: 1200px;
+            margin: 1rem auto;
+            padding: 0 1rem;
+        }
+
+        #quote-container h2 {
+            margin: 0;
+            margin-bottom: 1.5rem;
+            color: #5e2c7a;
+            font-weight: bold;
+            display: block;
+        }
+
+        #quoteText {
+            font-size: 1.2rem;
+            font-style: italic;
+            color: #333;
+            margin: 0;
+        }
+
+        /* Main Content */
+        main {
+            max-width: 1200px;
+            margin: 1rem auto;
+            padding: 0 1rem;
+        }
+
+        /* Goal Container */
+        #goal-container {
+            margin-top: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        #goal-container p {
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #5e2c7a;
+        }
+
+        #goal-container input[type="radio"] {
+            margin-right: 0.25rem;
+            cursor: pointer;
+        }
+
+        #goal-container label {
+            display: inline-block;
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+            font-weight: bold;
+            color: #5e2c7a;
+        }
+
+        #goal-container textarea {
+            display: block;
+            background: #f8e6ff;
+            border: 2px solid #dcaefb;
+            /* Light purple outline */
+            border-radius: 10px;
+            width: 70%;
+            padding: 0.5rem;
+            box-sizing: border-box;
+            font-family: inherit;
+            resize: vertical;
+            margin-bottom: 1rem;
+        }
+
+        #gratitude-and-button {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            max-width: 1200px;
+            margin: 1rem auto;
+            padding: 0 1rem;
+        }
+
+
+        /* Gratitude Section */
+        #gratitude-section {
+            background: #f8e6ff;
+            border: 2px solid #dcaefb;
+            border-radius: 10px;
+            padding: 1rem;
+            box-sizing: border-box;
+            width: 70%;
+            margin-bottom: 1rem;
+        }
+
+        #gratitude-section h2 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: #5e2c7a;
+        }
+
+        .input-row {
+            margin-bottom: 0.5rem;
+        }
+
+        .gratitude-input {
+            background: #f8e6ff;
+            border: 2px solid #dcaefb;
+            border-radius: 10px;
+            width: 100%;
+            padding: 0.5rem;
+            box-sizing: border-box;
+            font-family: inherit;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Save Button with icon, outside the gratitude container */
+        #saveBtn {
+            background: #a582bc;
+            /* Light purple background */
+            color: #fff;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 20px;
+            /* Rounded */
+            cursor: pointer;
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            /* space between icon and text */
+            margin-bottom: 1rem;
+            align-self: flex-end;
+
+        }
+
+        #saveBtn:hover {
+            background: #c28ded;
+            /* Slightly darker purple on hover */
+        }
+
+        #saveBtn svg {
+            width: 20px;
+            height: 20px;
+            fill: #fff;
+            /* White colored icon */
+        }
+
+        /* History Section (light purple outline, same background) */
+        #history-section {
+            background: #f8e6ff;
+            border: 2px solid #dcaefb;
+            border-radius: 10px;
+            padding: 1rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
+        }
+
+        #history-section h2 {
+            margin-top: 0;
+            color: #5e2c7a;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        table thead {
+            background: #c3a6eb;
+        }
+
+        table th,
+        table td {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            text-align: left;
+            vertical-align: top;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div id="title-container">
+            <h1>Daily Journal</h1>
+        </div>
+        <div id="date-container">
+            <label for="journalDate">Today's Date:</label>
+            <input type="date" id="journalDate" />
+        </div>
+    </header>
+
+    <main>
+        <div id="goal-and-quote-container">
+            <section id="goal-container">
+                <p>Have you completed your previous day's goal?</p>
+                <div>
+                    <input type="radio" name="completedPrevGoal" id="completedYes" value="yes" />
+                    <label for="completedYes">Yes</label>
+                    <input type="radio" name="completedPrevGoal" id="completedNo" value="no" />
+                    <label for="completedNo">No</label>
+                </div>
+
+                <label for="nextGoal">My goal for tomorrow:</label>
+                <textarea id="nextGoal" rows="2" placeholder="What's your goal for tomorrow?"></textarea>
+            </section>
+
+            <div id="quote-container">
+                <h2>Motivational Quote of the Day</h2>
+                <p id="quoteText"></p>
+            </div>
+        </div>
+
+        <div id="gratitude-and-button">
+            <section id="gratitude-section">
+                <h2>Three things I am grateful for</h2>
+                <div class="input-row">
+                    <input type="text" id="gratitude1" class="gratitude-input" placeholder="Gratitude #1" />
+                </div>
+                <div class="input-row">
+                    <input type="text" id="gratitude2" class="gratitude-input" placeholder="Gratitude #2" />
+                </div>
+                <div class="input-row">
+                    <input type="text" id="gratitude3" class="gratitude-input" placeholder="Gratitude #3" />
+                </div>
+            </section>
+
+            <button id="saveBtn">
+                <svg viewBox="0 0 512 512">
+                    <path
+                        d="M380.7 18.2c-3.6-3.5-8.5-5.4-13.5-5.2L32.4 20.6C19.5 21.2 8.4 31.6 7.2 44.6L.1 119c-.8 8.2 1.9 16.2 7.4 22.2l365.5 377.2c6 6.2 14.4 9.6 23 9.6 7.3 0 14.6-2.6 20.3-7.7l91.5-82.5c6.1-5.5 9.5-13.2 9.6-21.4l1.5-309.4c.1-11.4-4.4-22.3-12.4-30.4L380.7 18.2zM346.4 224H165.7c-15.5 0-28.1-12.6-28.1-28.1 0-15.5 12.6-28.1 28.1-28.1h180.7c15.5 0 28.1 12.6 28.1 28.1-.1 15.5-12.7 28.1-28.1 28.1z">
+                    </path>
+                </svg>
+                Save
+            </button>
+        </div>
+
+
+        <!-- History Section -->
+        <section id="history-section">
+            <h2>History </h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Gratitude #1</th>
+                        <th>Gratitude #2</th>
+                        <th>Gratitude #3</th>
+                        <th>Next Day Goal</th>
+                        <th>Completed Yesterday's Goal?</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody"></tbody>
+            </table>
+        </section>
+
+    </main>
+
+    <script>
+        // A small set of motivational quotes
+        const quotes = [
+            "The best time to plant a tree was 20 years ago. The second best time is now.",
+            "You miss 100% of the shots you don't take. – Wayne Gretzky",
+            "In the middle of difficulty lies opportunity. – Albert Einstein",
+            "Believe you can and you're halfway there. – Theodore Roosevelt",
+            "The future belongs to those who believe in the beauty of their dreams. – Eleanor Roosevelt",
+            "It does not matter how slowly you go as long as you do not stop. – Confucius",
+            "The secret of getting ahead is getting started. – Mark Twain",
+            "If you can dream it, you can do it. – Walt Disney",
+            "Keep your face always toward the sunshine—and shadows will fall behind you. – Walt Whitman",
+            "What you do today can improve all your tomorrows. – Ralph Marston"
+        ];
+
+        // Returns a new random quote each time
+        function getRandomQuote() {
+            const randomIndex = Math.floor(Math.random() * quotes.length);
+            return quotes[randomIndex];
+        }
+
+        // Utility to get a "YYYY-MM-DD" string from a Date object
+        function toDateString(dateObj) {
+            const yyyy = dateObj.getFullYear();
+            const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const dd = String(dateObj.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        // Load entry from localStorage for the given date
+        function loadEntry(dateString) {
+            const key = 'journal-' + dateString;
+            let entry = localStorage.getItem(key);
+            let data = {
+                gratitude: ["", "", ""],
+                nextGoal: "",
+                completedPreviousGoal: false
+            };
+            if (entry) {
+                data = JSON.parse(entry);
+            }
+
+            // Fill in the gratitude fields
+            document.getElementById('gratitude1').value = data.gratitude[0] || "";
+            document.getElementById('gratitude2').value = data.gratitude[1] || "";
+            document.getElementById('gratitude3').value = data.gratitude[2] || "";
+
+            // Fill in the next day goal
+            document.getElementById('nextGoal').value = data.nextGoal || "";
+
+            // Fill in the completed radio
+            if (data.completedPreviousGoal === true) {
+                document.getElementById('completedYes').checked = true;
+            } else {
+                document.getElementById('completedNo').checked = true;
+            }
+
+            // Display a new random quote each time
+            const quote = getRandomQuote();
+            document.getElementById('quoteText').textContent = quote;
+
+            // Load and display the history for all previous days
+            loadHistory(dateString);
+        }
+
+        // Save the current entry to localStorage
+        function saveEntry() {
+            const dateString = document.getElementById('journalDate').value.trim();
+            if (!dateString) {
+                alert("Please select a date first.");
+                return;
+            }
+
+            const gratitude1 = document.getElementById('gratitude1').value.trim();
+            const gratitude2 = document.getElementById('gratitude2').value.trim();
+            const gratitude3 = document.getElementById('gratitude3').value.trim();
+            const nextGoal = document.getElementById('nextGoal').value.trim();
+
+            // Error if tomorrow's goal or any gratitude field is empty
+            if (!nextGoal) {
+                alert("Please enter your goal for tomorrow.");
+                return;
+            }
+            if (!gratitude1 || !gratitude2 || !gratitude3) {
+                alert("Please enter all three things you are grateful for.");
+                return;
+            }
+
+            const completedPreviousGoal = document.getElementById('completedYes').checked;
+
+            const data = {
+                gratitude: [gratitude1, gratitude2, gratitude3],
+                nextGoal: nextGoal,
+                completedPreviousGoal: completedPreviousGoal
+            };
+
+            // Save to localStorage
+            const key = 'journal-' + dateString;
+            localStorage.setItem(key, JSON.stringify(data));
+
+            // Refresh history
+            loadHistory(dateString);
+
+            alert("Journal entry saved for " + dateString + "!");
+        }
+
+        // Load all previous days' entries and display them in a table
+        function loadHistory(currentDateString) {
+            const historyBody = document.getElementById('historyBody');
+            historyBody.innerHTML = "";
+
+            // Gather all journal keys from localStorage
+            const entries = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const storageKey = localStorage.key(i);
+                if (storageKey.startsWith('journal-')) {
+                    const datePart = storageKey.replace('journal-', '');
+                    // Only consider entries older than the current date
+                    if (datePart < currentDateString) {
+                        const entryData = JSON.parse(localStorage.getItem(storageKey));
+                        entries.push({
+                            date: datePart,
+                            gratitude: entryData.gratitude || ["", "", ""],
+                            nextGoal: entryData.nextGoal || "",
+                            completedPreviousGoal: entryData.completedPreviousGoal || false
+                        });
+                    }
+                }
+            }
+
+            // Sort by date ascending
+            entries.sort((a, b) => (a.date < b.date ? -1 : 1));
+
+            // Populate the table
+            entries.forEach(entry => {
+                const tr = document.createElement('tr');
+                const tdDate = document.createElement('td');
+                const tdG1 = document.createElement('td');
+                const tdG2 = document.createElement('td');
+                const tdG3 = document.createElement('td');
+                const tdGoal = document.createElement('td');
+                const tdCompleted = document.createElement('td');
+
+                tdDate.textContent = entry.date;
+                tdG1.textContent = entry.gratitude[0];
+                tdG2.textContent = entry.gratitude[1];
+                tdG3.textContent = entry.gratitude[2];
+                tdGoal.textContent = entry.nextGoal;
+                tdCompleted.textContent = entry.completedPreviousGoal ? "Yes" : "No";
+
+                tr.appendChild(tdDate);
+                tr.appendChild(tdG1);
+                tr.appendChild(tdG2);
+                tr.appendChild(tdG3);
+                tr.appendChild(tdGoal);
+                tr.appendChild(tdCompleted);
+
+                historyBody.appendChild(tr);
+            });
+        }
+
+        // Initialize page
+        document.addEventListener("DOMContentLoaded", () => {
+            const dateInput = document.getElementById('journalDate');
+
+            // Set today's date as default
+            const today = new Date();
+            const dateString = toDateString(today);
+            dateInput.value = dateString;
+
+            // Load the entry for today by default
+            loadEntry(dateString);
+
+            // When date changes, load the corresponding entry
+            dateInput.addEventListener('change', () => {
+                loadEntry(dateInput.value);
+            });
+
+            // Save button event
+            document.getElementById('saveBtn').addEventListener('click', saveEntry);
+        });
+    </script>
+</body>
+
+</html>
