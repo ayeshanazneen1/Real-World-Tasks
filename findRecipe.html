@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Find the recipe</title>
+    <!-- Import Moon Dance font from Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Moon+Dance&display=swap" rel="stylesheet">
+    <style>
+        /* Global Styles & Background */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            /* Prominent light brown gradient background */
+            background: linear-gradient(135deg, #F5DEB3, #D2B48C);
+            min-height: 100vh;
+        }
+
+        /* Common Button Style: brown outline, light brown background, rounded edges, dark brown text */
+        button {
+            border: 2px solid #5D4037;
+            background: #D2B48C;
+            color: #5D4037;
+            border-radius: 5px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Header */
+        header {
+            position: relative;
+            padding: 15px 20px;
+            text-align: center;
+            background: transparent;
+        }
+
+        header h1 {
+            margin: 0;
+            font-family: 'Moon Dance', cursive;
+            color: #5D4037;
+            font-size: 36px;
+        }
+
+        /* The "Find Recipe For Today" button is in the header (top‐right) */
+        header button {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* Search Section (outside the white container) */
+        #searchSection {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        #searchSection input {
+            width: 300px;
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #5D4037;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        /* White container for list & full recipe details */
+        #contentArea {
+            background: rgba(255, 255, 255, 0.5);
+            margin: 0 auto;
+            max-width: 1000px;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        /* Search Results List (within the white container) */
+        #searchResults {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .recipe-list-item {
+            background: #fff;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .recipe-list-item img {
+            width: 80px;
+            height: 80px;
+            border-radius: 4px;
+            object-fit: cover;
+            margin-right: 15px;
+        }
+
+        .recipe-list-item:hover {
+            background: #ffece6;
+        }
+
+        /* Detailed Recipe View (for search results) */
+        #recipeDetail {
+            background: rgba(255, 255, 255, 0.5);
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            margin: 20px auto;
+        }
+
+        #recipeDetail img {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        #recipeDetail h2 {
+            margin-top: 20px;
+        }
+
+        #recipeDetail p {
+            line-height: 1.6;
+        }
+
+        #recipeDetail ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        #recipeDetail ul li {
+            margin-bottom: 5px;
+        }
+
+        /* Cards Grid for Random Recipes (within the white container) */
+        #randomContainer {
+            display: none;
+            margin: 0 auto;
+            max-width: 500px;
+            max-height: 600px;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            justify-items: center;
+        }
+
+        /* Flip Card Styles (small size with light brown outline) */
+        .flip-card {
+            width: 200px;
+            height: 250px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        /* Only one card can be flipped at a time */
+        .flip-card.flip .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flip-card-front,
+        .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 2px solid #deb887;
+            /* Light brown outline */
+            border-radius: 10px;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        /* Front side: displays the category in dark brown with Moon Dance font */
+        .flip-card-front {
+            background: #fff;
+        }
+
+        .flip-card-front p {
+            margin: 0;
+            font-family: 'Moon Dance', cursive;
+            color: #5D4037;
+            font-size: 20px;
+        }
+
+        /* Back side: displays the picture, name, and a "View Full Recipe" button */
+        .flip-card-back {
+            background: #fff;
+            transform: rotateY(180deg);
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .flip-card-back img {
+            width: 100%;
+            height: 60%;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+
+        .flip-card-back h3 {
+            margin: 5px 0;
+            font-size: 16px;
+            color: #5D4037;
+        }
+
+        /* Detailed view for a Random Recipe */
+        .random-detail {
+            background: #fff;
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            margin: 20px auto;
+        }
+
+        .random-detail img {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .random-detail h2 {
+            margin-top: 20px;
+        }
+
+        .random-detail p {
+            line-height: 1.6;
+        }
+
+        .random-detail ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .random-detail ul li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header with centered title and "Find Recipe For Today" button -->
+    <header>
+        <h1>Find the recipe</h1>
+        <button id="todayBtn">Find Recipe For Today</button>
+    </header>
+
+    <!-- Search Bar Section (outside the white container) -->
+    <div id="searchSection">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search for a recipe by name...">
+            <button id="searchBtn">Search</button>
+        </div>
+    </div>
+
+    <!-- White Container for displaying Search Results, Full Recipe, and Random Cards -->
+    <div id="contentArea">
+        <div id="searchResults"></div>
+        <div id="recipeDetail" style="display:none;"></div>
+        <div id="randomContainer" style="display:none;"></div>
+    </div>
+
+    <script>
+        /***********************
+         * SEARCH FUNCTIONALITY *
+         ***********************/
+
+        document.getElementById('searchBtn').addEventListener('click', function () {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) return;
+            fetch('https://www.themealdb.com/api/json/v1/1/search.php?s=' + encodeURIComponent(query))
+                .then(res => res.json())
+                .then(data => {
+                    const searchResults = document.getElementById('searchResults');
+                    searchResults.innerHTML = '';
+                    // Hide other views
+                    document.getElementById('recipeDetail').style.display = 'none';
+                    document.getElementById('randomContainer').style.display = 'none';
+                    if (data.meals) {
+                        data.meals.forEach(meal => {
+                            document.getElementById('contentArea').style.display = 'block';
+                            const item = document.createElement('div');
+                            item.className = 'recipe-list-item';
+                            const thumb = document.createElement('img');
+                            thumb.src = meal.strMealThumb;
+                            thumb.alt = meal.strMeal;
+                            const title = document.createElement('span');
+                            title.textContent = meal.strMeal;
+                            item.appendChild(thumb);
+                            item.appendChild(title);
+                            item.addEventListener('click', function () {
+                                showRecipeDetail(meal);
+                            });
+                            searchResults.appendChild(item);
+                        });
+                    } else {
+                        searchResults.innerHTML = '<p>No recipes found.</p>';
+                    }
+                })
+                .catch(err => console.error(err));
+        });
+
+        // Display full detailed view for a searched recipe
+        function showRecipeDetail(meal) {
+            document.getElementById('searchResults').innerHTML = '';
+            document.getElementById('randomContainer').style.display = 'none';
+            const detailDiv = document.getElementById('recipeDetail');
+            detailDiv.style.display = 'block';
+            detailDiv.innerHTML = '';
+
+            const title = document.createElement('h2');
+            title.textContent = meal.strMeal;
+            const img = document.createElement('img');
+            img.src = meal.strMealThumb;
+            img.alt = meal.strMeal;
+            const category = document.createElement('p');
+            category.innerHTML = '<strong>Category:</strong> ' + meal.strCategory;
+            const area = document.createElement('p');
+            area.innerHTML = '<strong>Area:</strong> ' + meal.strArea;
+            const instructions = document.createElement('p');
+            instructions.innerHTML = '<strong>Instructions:</strong><br>' + meal.strInstructions;
+
+            const ingredientsList = document.createElement('ul');
+            const ingredientsTitle = document.createElement('strong');
+            ingredientsTitle.textContent = 'Ingredients:';
+            ingredientsList.appendChild(ingredientsTitle);
+            for (let i = 1; i <= 20; i++) {
+                const ingredient = meal['strIngredient' + i];
+                const measure = meal['strMeasure' + i];
+                if (ingredient && ingredient.trim() !== '') {
+                    const li = document.createElement('li');
+                    li.textContent = measure + ' ' + ingredient;
+                    ingredientsList.appendChild(li);
+                }
+            }
+
+            const backBtn = document.createElement('button');
+            backBtn.textContent = 'Back to Results';
+            backBtn.addEventListener('click', function () {
+                detailDiv.style.display = 'none';
+                document.getElementById('searchResults').style.display = 'block';
+            });
+
+            detailDiv.appendChild(img);
+            detailDiv.appendChild(title);
+            detailDiv.appendChild(category);
+            detailDiv.appendChild(area);
+            detailDiv.appendChild(instructions);
+            detailDiv.appendChild(ingredientsList);
+            detailDiv.appendChild(backBtn);
+        }
+
+        /************************************
+         * RANDOM RECIPES & FLIP CARD LOGIC  *
+         ************************************/
+        let currentRandomMeals = [];
+
+        // Fetch 4 random recipes and display the grid
+        function fetchRandomRecipes() {
+            document.getElementById('contentArea').style.display = 'block';
+            const randomContainer = document.getElementById('randomContainer');
+            randomContainer.style.display = 'block';
+            randomContainer.innerHTML = '';
+            // Hide other views
+            document.getElementById('searchResults').innerHTML = '';
+            document.getElementById('recipeDetail').style.display = 'none';
+
+            const promises = [];
+            for (let i = 0; i < 4; i++) {
+                promises.push(
+                    fetch('https://www.themealdb.com/api/json/v1/1/random.php')
+                        .then(res => res.json())
+                        .then(data => data.meals[0])
+                );
+            }
+            Promise.all(promises)
+                .then(meals => {
+                    currentRandomMeals = meals;
+                    showRandomGrid(meals);
+                })
+                .catch(err => console.error(err));
+        }
+
+        document.getElementById('todayBtn').addEventListener('click', function () {
+            fetchRandomRecipes();
+        });
+
+        // Render the grid of flip cards for random recipes
+        function showRandomGrid(meals) {
+            const randomContainer = document.getElementById('randomContainer');
+            randomContainer.innerHTML = '';
+            const grid = document.createElement('div');
+            grid.className = 'cards-grid';
+            meals.forEach(meal => {
+                const card = createFlipCard(meal);
+                grid.appendChild(card);
+            });
+            // Add a "Back to Search" button below the grid
+            const backBtn = document.createElement('button');
+            backBtn.textContent = 'Back to Search';
+            backBtn.style.marginTop = '20px';
+            backBtn.addEventListener('click', function () {
+                randomContainer.style.display = 'none';
+            });
+            randomContainer.appendChild(grid);
+            randomContainer.appendChild(backBtn);
+        }
+
+        // Create a flip card for a random recipe.
+        // Front: shows the recipe's category.
+        // Back: shows the recipe's picture, name, and a "View Full Recipe" button.
+        // Only one card may be flipped at a time.
+        function createFlipCard(meal) {
+            const card = document.createElement('div');
+            card.className = 'flip-card';
+
+            const cardInner = document.createElement('div');
+            cardInner.className = 'flip-card-inner';
+
+            // Front side: Category text
+            const cardFront = document.createElement('div');
+            cardFront.className = 'flip-card-front';
+            const categoryText = document.createElement('p');
+            categoryText.textContent = meal.strCategory;
+            cardFront.appendChild(categoryText);
+
+            // Back side: Image, Name, and "View Full Recipe" button
+            const cardBack = document.createElement('div');
+            cardBack.className = 'flip-card-back';
+            const img = document.createElement('img');
+            img.src = meal.strMealThumb;
+            img.alt = meal.strMeal;
+            const name = document.createElement('h3');
+            name.textContent = meal.strMeal;
+            const viewBtn = document.createElement('button');
+            viewBtn.textContent = 'View Full Recipe';
+            // Prevent card flip when clicking the button.
+            viewBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                showRecipeDetailFromRandom(meal);
+            });
+
+            cardBack.appendChild(img);
+            cardBack.appendChild(name);
+            cardBack.appendChild(viewBtn);
+
+            cardInner.appendChild(cardFront);
+            cardInner.appendChild(cardBack);
+            card.appendChild(cardInner);
+
+            // Allow only one card to be flipped at a time.
+            card.addEventListener('click', function () {
+                const allCards = document.querySelectorAll('.flip-card');
+                allCards.forEach(function (c) {
+                    if (c !== card) {
+                        c.classList.remove('flip');
+                    }
+                });
+                card.classList.toggle('flip');
+            });
+
+            return card;
+        }
+
+        // Show full detailed view for a random recipe.
+        // Includes a "Reroll Cards" button that fetches new random recipes.
+        function showRecipeDetailFromRandom(meal) {
+            const randomContainer = document.getElementById('randomContainer');
+            randomContainer.innerHTML = '';
+            const detailDiv = document.createElement('div');
+            detailDiv.className = 'random-detail';
+
+            const title = document.createElement('h2');
+            title.textContent = meal.strMeal;
+            const img = document.createElement('img');
+            img.src = meal.strMealThumb;
+            img.alt = meal.strMeal;
+            const category = document.createElement('p');
+            category.innerHTML = '<strong>Category:</strong> ' + meal.strCategory;
+            const area = document.createElement('p');
+            area.innerHTML = '<strong>Area:</strong> ' + meal.strArea;
+            const instructions = document.createElement('p');
+            instructions.innerHTML = '<strong>Instructions:</strong><br>' + meal.strInstructions;
+
+            const ingredientsList = document.createElement('ul');
+            const ingredientsTitle = document.createElement('strong');
+            ingredientsTitle.textContent = 'Ingredients:';
+            ingredientsList.appendChild(ingredientsTitle);
+            for (let i = 1; i <= 20; i++) {
+                const ingredient = meal['strIngredient' + i];
+                const measure = meal['strMeasure' + i];
+                if (ingredient && ingredient.trim() !== '') {
+                    const li = document.createElement('li');
+                    li.textContent = measure + ' ' + ingredient;
+                    ingredientsList.appendChild(li);
+                }
+            }
+
+            // "Reroll Cards" button to fetch new random recipes.
+            const rerollBtn = document.createElement('button');
+            rerollBtn.textContent = 'Reroll Cards';
+            rerollBtn.addEventListener('click', function () {
+                fetchRandomRecipes();
+            });
+
+            detailDiv.appendChild(img);
+            detailDiv.appendChild(title);
+            detailDiv.appendChild(category);
+            detailDiv.appendChild(area);
+            detailDiv.appendChild(instructions);
+            detailDiv.appendChild(ingredientsList);
+            detailDiv.appendChild(rerollBtn);
+
+            randomContainer.appendChild(detailDiv);
+        }
+    </script>
+</body>
+
+</html>

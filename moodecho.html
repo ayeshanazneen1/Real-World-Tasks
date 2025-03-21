@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Mood Echo</title>
+    <!-- Google Font: Moon Dance -->
+    <link href="https://fonts.googleapis.com/css2?family=Moon+Dance&display=swap" rel="stylesheet">
+    <style>
+        /* Reset and basic styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f7f7f7;
+        }
+
+        /* Container without extra white background */
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 2px;
+        }
+
+        /* Title styling: bigger text, fewer top margins, red brown color, Moon Dance font */
+        h1 {
+            text-align: center;
+            color: #A0522D;
+            font-family: 'Moon Dance', cursive;
+            font-size: 48px;
+            margin-top: 2px;
+            margin-bottom: 50px;
+        }
+
+        /* Content layout: search area (left) and liked songs (right) */
+        .content-wrapper {
+            display: flex;
+            gap: 25px;
+        }
+
+        .search-section {
+            flex: 2;
+        }
+
+        .liked-container {
+            flex: 1;
+            border-left: 1px solid #ddd;
+            padding-left: 20px;
+            padding-right: 0;
+        }
+
+        /* Liked songs label with same styling as title */
+        .liked-container h2 {
+            text-align: center;
+            color: #A0522D;
+            font-family: 'Moon Dance', cursive;
+            font-size: 48px;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        /* Mood Line Styles */
+        .mood-line {
+            position: relative;
+            height: 60px;
+            margin-bottom: 10px;
+            /* less margin between inputs */
+            border-top: 2px solid #ddd;
+        }
+
+        .mood-markers {
+            position: absolute;
+            top: -20px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .mood-marker {
+            cursor: pointer;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .mood-marker.selected {
+            transform: scale(1.3);
+        }
+
+        .mood-marker .emoji {
+            font-size: 16px;
+            display: block;
+        }
+
+        .mood-marker .label {
+            font-size: 12px;
+        }
+
+        /* Limit Selector Styles – smaller boxes */
+        .limit-selector {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .limit-card {
+            cursor: pointer;
+            padding: 5px 10px;
+            margin: 0 5px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            transition: background 0.3s, border-color 0.3s;
+            font-size: 14px;
+            width: 40px;
+            text-align: center;
+        }
+
+        .limit-card.selected {
+            background: #0070c9;
+            color: #fff;
+            border-color: #005fa3;
+        }
+
+        /* Find Music Button with rounded edges and red brown background */
+        #searchButton {
+            display: block;
+            margin: 0 auto 20px auto;
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #A0522D;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        #searchButton:hover {
+            background: #8B4513;
+        }
+
+        /* Search Results Grid: ensures at least 3 items per row if space permits */
+        .results {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        /* Song Card with hover animation */
+        .song-card {
+            position: relative;
+            overflow: hidden;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 200px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .song-card:hover {
+            transform: scale(1.02);
+        }
+
+        .song-card img {
+            width: 100%;
+            display: block;
+            transition: filter 0.3s;
+        }
+
+        .song-card:hover img {
+            filter: brightness(50%);
+        }
+
+        /* Animated song info overlay */
+        .song-info {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: #fff;
+            text-align: left;
+            font-weight: bold;
+            transform: translateX(-100%);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            z-index: 2;
+        }
+
+        .song-card:hover .song-info {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        /* Modal Styles for Song Details */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+        }
+
+        .close-modal:hover {
+            color: #000;
+        }
+
+        .modal-content img {
+            display: block;
+            max-width: 150px;
+            margin: 0 auto 20px;
+            border-radius: 8px;
+        }
+
+        .modal-content ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .modal-content li {
+            margin: 5px 0;
+        }
+
+        /* Modal Like Icon */
+        .modal-like-icon {
+            font-size: 24px;
+            cursor: pointer;
+            display: block;
+            text-align: center;
+            margin: 10px 0;
+            color: #aaa;
+            transition: color 0.3s;
+        }
+
+        .modal-like-icon.liked {
+            color: red;
+        }
+
+        /* Liked Songs List in Right Container */
+        #likedSongsList {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #likedSongsList li {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+
+        #likedSongsList button {
+            background: transparent;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Mood Echo</h1>
+        <div class="content-wrapper">
+            <div class="search-section">
+                <!-- Mood Input: horizontal line with equally spaced mood markers -->
+                <div class="mood-line">
+                    <div class="mood-markers">
+                        <div class="mood-marker" data-mood="happy">
+                            <span class="emoji">😀</span>
+                            <span class="label">Happy</span>
+                        </div>
+                        <div class="mood-marker" data-mood="sad">
+                            <span class="emoji">😢</span>
+                            <span class="label">Sad</span>
+                        </div>
+                        <div class="mood-marker" data-mood="relaxed">
+                            <span class="emoji">😌</span>
+                            <span class="label">Relaxed</span>
+                        </div>
+                        <div class="mood-marker" data-mood="party">
+                            <span class="emoji">🎉</span>
+                            <span class="label">Party</span>
+                        </div>
+                        <div class="mood-marker" data-mood="study">
+                            <span class="emoji">📚</span>
+                            <span class="label">Study</span>
+                        </div>
+                        <div class="mood-marker" data-mood="romantic">
+                            <span class="emoji">❤️</span>
+                            <span class="label">Romantic</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Limit Selector: cards for number of music items -->
+                <div class="limit-selector">
+                    <div class="limit-card" data-limit="5"><span>05</span></div>
+                    <div class="limit-card" data-limit="10"><span>10</span></div>
+                    <div class="limit-card" data-limit="15"><span>15</span></div>
+                </div>
+                <!-- Find Music Button -->
+                <button id="searchButton">Find Music</button>
+                <!-- Search Results: music cards displayed here -->
+                <div id="results" class="results"></div>
+            </div>
+            <!-- Liked Songs Container on the right -->
+            <div class="liked-container">
+                <h2>Liked Songs</h2>
+                <ul id="likedSongsList">
+                    <!-- Liked songs will appear as list items with an unlike heart button -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Song Details Modal -->
+    <div id="songModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" id="closeModal">&times;</span>
+            <div id="songDetails"></div>
+        </div>
+    </div>
+
+    <script>
+        let selectedMood = null;
+        let selectedLimit = null;
+        // Retrieve liked songs from local storage (if any)
+        let likedSongs = {};
+        if (localStorage.getItem('likedSongs')) {
+            try {
+                likedSongs = JSON.parse(localStorage.getItem('likedSongs'));
+            } catch (e) {
+                likedSongs = {};
+            }
+        }
+        function saveLikedSongs() {
+            localStorage.setItem('likedSongs', JSON.stringify(likedSongs));
+        }
+        // Update liked songs list in right container with an unlike heart button
+        function updateLikedSongsListUI() {
+            const likedSongsList = document.getElementById('likedSongsList');
+            likedSongsList.innerHTML = '';
+            const songsArray = Object.values(likedSongs);
+            if (songsArray.length === 0) {
+                likedSongsList.innerHTML = '<li>No liked songs yet.</li>';
+                return;
+            }
+            songsArray.forEach(song => {
+                const li = document.createElement('li');
+                li.textContent = song.trackName + ' - ' + song.artistName;
+                const unlikeBtn = document.createElement('button');
+                // Display a filled heart initially; on click, show an unfilled heart and remove the song.
+                unlikeBtn.textContent = "❤️";
+                unlikeBtn.addEventListener('click', () => {
+                    unlikeBtn.textContent = "♡";
+                    delete likedSongs[song.trackId];
+                    saveLikedSongs();
+                    updateLikedSongsListUI();
+                });
+                li.appendChild(unlikeBtn);
+                likedSongsList.appendChild(li);
+            });
+        }
+        // Mood marker selection
+        const moodMarkers = document.querySelectorAll('.mood-marker');
+        moodMarkers.forEach(marker => {
+            marker.addEventListener('click', () => {
+                moodMarkers.forEach(m => m.classList.remove('selected'));
+                marker.classList.add('selected');
+                selectedMood = marker.getAttribute('data-mood');
+            });
+        });
+        // Limit selection
+        const limitCards = document.querySelectorAll('.limit-card');
+        limitCards.forEach(card => {
+            card.addEventListener('click', () => {
+                limitCards.forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                selectedLimit = card.getAttribute('data-limit');
+            });
+        });
+        // Search functionality using iTunes API
+        const searchButton = document.getElementById('searchButton');
+        searchButton.addEventListener('click', () => {
+            if (!selectedMood || !selectedLimit) {
+                alert('Please select both a mood and the number of songs.');
+                return;
+            }
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Loading...</p>';
+            const apiUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(selectedMood)}&media=music&limit=${selectedLimit}`;
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    displayResults(data.results);
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    resultsDiv.innerHTML = '<p>Error fetching data. Please try again later.</p>';
+                });
+        });
+        // Create a song card for search results (clickable to show details)
+        function createSongCard(song) {
+            const card = document.createElement('div');
+            card.className = 'song-card';
+            card.addEventListener('click', () => {
+                showSongDetails(song);
+            });
+            const img = document.createElement('img');
+            img.src = song.artworkUrl100;
+            img.alt = song.trackName;
+            card.appendChild(img);
+            const info = document.createElement('div');
+            info.className = 'song-info';
+            const title = document.createElement('div');
+            title.textContent = song.trackName;
+            const artist = document.createElement('div');
+            artist.textContent = song.artistName;
+            info.appendChild(title);
+            info.appendChild(artist);
+            card.appendChild(info);
+            return card;
+        }
+        // Display search results in grid layout
+        function displayResults(songs) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+            if (!songs || songs.length === 0) {
+                resultsDiv.innerHTML = '<p>No results found.</p>';
+                return;
+            }
+            songs.forEach(song => {
+                const card = createSongCard(song);
+                resultsDiv.appendChild(card);
+            });
+        }
+        // Modal functionality: show song details with like icon
+        const modal = document.getElementById('songModal');
+        const modalContent = document.getElementById('songDetails');
+        const closeModal = document.getElementById('closeModal');
+        function showSongDetails(song) {
+            modalContent.innerHTML = "";
+            const img = document.createElement('img');
+            img.src = song.artworkUrl100;
+            img.alt = song.trackName;
+            modalContent.appendChild(img);
+            // Like icon in modal: filled heart if liked; empty if not. On click, add to liked songs.
+            const likeIcon = document.createElement('span');
+            likeIcon.className = 'modal-like-icon';
+            if (likedSongs[song.trackId]) {
+                likeIcon.textContent = "❤️";
+                likeIcon.classList.add('liked');
+            } else {
+                likeIcon.textContent = "♡";
+            }
+            likeIcon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!likedSongs[song.trackId]) {
+                    likedSongs[song.trackId] = song;
+                    saveLikedSongs();
+                    updateLikedSongsListUI();
+                    likeIcon.textContent = "❤️";
+                    likeIcon.classList.add('liked');
+                }
+            });
+            modalContent.appendChild(likeIcon);
+            // Display song details as a list
+            const detailsList = document.createElement('ul');
+            const trackNameItem = document.createElement('li');
+            trackNameItem.textContent = `Track: ${song.trackName}`;
+            detailsList.appendChild(trackNameItem);
+            const artistItem = document.createElement('li');
+            artistItem.textContent = `Artist: ${song.artistName}`;
+            detailsList.appendChild(artistItem);
+            if (song.collectionName) {
+                const albumItem = document.createElement('li');
+                albumItem.textContent = `Album: ${song.collectionName}`;
+                detailsList.appendChild(albumItem);
+            }
+            if (song.primaryGenreName) {
+                const genreItem = document.createElement('li');
+                genreItem.textContent = `Genre: ${song.primaryGenreName}`;
+                detailsList.appendChild(genreItem);
+            }
+            if (song.releaseDate) {
+                const releaseItem = document.createElement('li');
+                releaseItem.textContent = `Release Date: ${new Date(song.releaseDate).toLocaleDateString()}`;
+                detailsList.appendChild(releaseItem);
+            }
+            if (song.trackPrice) {
+                const priceItem = document.createElement('li');
+                priceItem.textContent = `Price: $${song.trackPrice}`;
+                detailsList.appendChild(priceItem);
+            }
+            if (song.previewUrl) {
+                const previewItem = document.createElement('li');
+                const previewLink = document.createElement('a');
+                previewLink.href = song.previewUrl;
+                previewLink.textContent = 'Preview Song';
+                previewLink.target = '_blank';
+                previewItem.appendChild(previewLink);
+                detailsList.appendChild(previewItem);
+            }
+            modalContent.appendChild(detailsList);
+            modal.style.display = 'block';
+        }
+        closeModal.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+        window.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+        // Initialize liked songs list on page load
+        updateLikedSongsListUI();
+    </script>
+</body>
+
+</html>

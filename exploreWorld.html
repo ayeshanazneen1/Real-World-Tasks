@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Explore the World</title>
+    <!-- Import Moon Dance font from Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Moon+Dance&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            /* Gradient background from light grey to dark grey */
+            background: linear-gradient(135deg, #d3d3d3, #696969);
+            margin: 0;
+            padding: 0;
+            color: #333;
+            height: 100vh;
+            background-attachment: fixed;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-family: 'Moon Dance', cursive;
+            color: black;
+            font-size: 48px;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin: 2px 5px;
+            /* Reduced horizontal margins */
+        }
+
+        .left-control {
+            text-align: left;
+            margin: 2px 5px;
+            /* Reduced horizontal margins */
+        }
+
+        .left-control label {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .left-control select {
+            padding: 5px;
+            margin-right: 10px;
+        }
+
+        .right-control {
+            text-align: right;
+            margin: 0 5px;
+            /* Reduced horizontal margins */
+        }
+
+        .random-fact {
+            padding: 20px 30px;
+            border: 2px solid black;
+            background: #e9ecef;
+            border-radius: 50px;
+            font-style: italic;
+            max-width: 250px;
+            text-align: center;
+            word-wrap: break-word;
+        }
+
+        .content-section {
+            margin-left: 25px;
+            margin-right: 25px;
+            margin-bottom: 20px;
+        }
+
+        .content-section h2 {
+            margin-bottom: 10px;
+        }
+
+        input[type="text"],
+        select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        button {
+            padding: 8px 12px;
+            background: #d3d3d3;
+            color: black;
+            border: 2px solid black;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #c0c0c0;
+        }
+
+        /* Results container */
+        #results {
+            display: block;
+        }
+
+        /* Country card layout: details on left and flag on right */
+        .country {
+            display: flex;
+            flex-direction: row;
+            width: 100%;
+            max-width: 1000px;
+            margin: 10px auto;
+            padding: 10px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .details-container {
+            flex: 1;
+            padding: 10px;
+        }
+
+        .flag-container {
+            flex: 0 0 auto;
+            width: 200px;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .flag {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+
+        .details {
+            font-size: 13px;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 4px;
+            overflow: auto;
+            max-height: 300px;
+            margin-top: 10px;
+        }
+
+        .details ul,
+        .details ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .error-message {
+            color: red;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 600px) {
+            .header-controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .right-control {
+                margin-top: 10px;
+                align-self: stretch;
+                text-align: left;
+            }
+
+            input[type="text"],
+            select {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            .country {
+                flex-direction: column;
+            }
+
+            .flag-container {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Explore the World</h1>
+            <div class="header-controls">
+                <div class="left-control">
+                    <label for="modeSelect">Exploring mode:</label>
+                    <select id="modeSelect">
+                        <option value="search">Search</option>
+                        <option value="filter">Filter</option>
+                    </select>
+                    <!-- Dropdown appears only in Filter mode -->
+                    <div id="filterCategoryContainer" style="display: none; margin-top: 10px;">
+                        <label for="filterCategorySelect">Filter by:</label>
+                        <select id="filterCategorySelect">
+                            <option value="">Select category</option>
+                            <option value="region">Region</option>
+                            <option value="language">Language</option>
+                            <option value="currency">Currency</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="right-control">
+                    <div id="randomFactContainer" class="random-fact">
+                        <!-- Random fact will be loaded here on page load -->
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Search Section -->
+        <div id="searchSection" class="content-section">
+            <h2>Search by Country Name</h2>
+            <div>
+                <input type="text" id="countryInput" placeholder="Enter country name">
+                <button id="searchButton">Search</button>
+            </div>
+            <div id="searchError" class="error-message" style="display: none;"></div>
+        </div>
+
+        <!-- Filter Section -->
+        <div id="filterSection" class="content-section" style="display: none;">
+            <!-- Filter input areas will be shown based on filter category selection -->
+            <div id="regionFilter" style="display: none; margin-bottom: 10px;">
+                <label for="regionSelect">Region:</label>
+                <select id="regionSelect">
+                    <option value="">Select region</option>
+                    <option value="Africa">Africa</option>
+                    <option value="Americas">Americas</option>
+                    <option value="Asia">Asia</option>
+                    <option value="Europe">Europe</option>
+                    <option value="Oceania">Oceania</option>
+                    <option value="Antarctic">Antarctic</option>
+                </select>
+                <button id="regionButton">Filter</button>
+                <div id="regionError" class="error-message" style="display: none;"></div>
+            </div>
+            <div id="languageFilter" style="display: none; margin-bottom: 10px;">
+                <label for="languageInput">Language:</label>
+                <input type="text" id="languageInput" placeholder="Enter language name (e.g., English)">
+                <button id="languageButton">Filter</button>
+                <div id="languageError" class="error-message" style="display: none;"></div>
+            </div>
+            <div id="currencyFilter" style="display: none; margin-bottom: 10px;">
+                <label for="currencyInput">Currency:</label>
+                <input type="text" id="currencyInput" placeholder="Enter currency name (e.g., Dollar)">
+                <button id="currencyButton">Filter</button>
+                <div id="currencyError" class="error-message" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="content-section">
+            <h2 id="resultsHeader" style="display: none;">Results</h2>
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        // Recursively render all details of an object
+        function renderDetails(value) {
+            if (Array.isArray(value)) {
+                let html = '<ol>';
+                value.forEach(item => {
+                    html += `<li>${renderDetails(item)}</li>`;
+                });
+                html += '</ol>';
+                return html;
+            } else if (typeof value === 'object' && value !== null) {
+                let html = '<ul>';
+                for (const key in value) {
+                    html += `<li><strong>${key}:</strong> ${renderDetails(value[key])}</li>`;
+                }
+                html += '</ul>';
+                return html;
+            } else {
+                return String(value);
+            }
+        }
+
+        // Create a country card with details on the left and flag on the right
+        function displayCountry(country) {
+            const div = document.createElement('div');
+            div.classList.add('country');
+            div.innerHTML = `
+        <div class="details-container">
+          <h3>${country.name.common}</h3>
+          <div class="details">
+            ${renderDetails(country)}
+          </div>
+        </div>
+        <div class="flag-container">
+          <img src="${country.flags && country.flags.png ? country.flags.png : ''}" alt="Flag of ${country.name.common}" class="flag">
+        </div>
+      `;
+            return div;
+        }
+
+        // Display an array of country objects in the results section
+        function displayResults(countries) {
+            const resultsDiv = document.getElementById('results');
+            const resultsHeader = document.getElementById('resultsHeader');
+            resultsDiv.innerHTML = "";
+            if (countries.length === 0) {
+                resultsHeader.style.display = "none";
+                resultsDiv.innerHTML = "<p>No countries found.</p>";
+                return;
+            }
+            resultsHeader.style.display = "block";
+            countries.forEach(country => {
+                resultsDiv.appendChild(displayCountry(country));
+            });
+        }
+
+        // Fetch and display a random country fact on page load
+        function fetchRandomFact() {
+            fetch('https://restcountries.com/v3.1/all')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to fetch country data");
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const randomIndex = Math.floor(Math.random() * data.length);
+                    const country = data[randomIndex];
+                    const facts = [];
+                    facts.push(`Did you know that ${country.name.common} has a population of ${country.population.toLocaleString()} people?`);
+                    facts.push(`Did you know that ${country.name.common} spans an area of ${country.area.toLocaleString()} km²?`);
+                    if (country.capital && country.capital.length > 0) {
+                        facts.push(`Did you know that the capital of ${country.name.common} is ${country.capital[0]}?`);
+                    }
+                    const fact = facts[Math.floor(Math.random() * facts.length)];
+                    document.getElementById('randomFactContainer').innerText = fact;
+                })
+                .catch(error => {
+                    document.getElementById('randomFactContainer').innerText = "Could not load random fact.";
+                });
+        }
+
+        // Reset error messages
+        function resetErrors() {
+            document.getElementById('searchError').style.display = "none";
+            document.getElementById('regionError').style.display = "none";
+            document.getElementById('languageError').style.display = "none";
+            document.getElementById('currencyError').style.display = "none";
+        }
+
+        // Event listener for exploring mode dropdown
+        document.getElementById('modeSelect').addEventListener('change', function () {
+            resetErrors();
+            const mode = this.value;
+            const searchSection = document.getElementById('searchSection');
+            const filterSection = document.getElementById('filterSection');
+            const filterCategoryContainer = document.getElementById('filterCategoryContainer');
+            if (mode === "search") {
+                searchSection.style.display = "block";
+                filterSection.style.display = "none";
+                filterCategoryContainer.style.display = "none";
+            } else {
+                searchSection.style.display = "none";
+                filterSection.style.display = "block";
+                filterCategoryContainer.style.display = "block";
+            }
+            // Clear previous results
+            document.getElementById('results').innerHTML = "";
+            document.getElementById('resultsHeader').style.display = "none";
+        });
+
+        // Event listener for filter category dropdown
+        document.getElementById('filterCategorySelect').addEventListener('change', function () {
+            resetErrors();
+            const category = this.value;
+            // Hide all filter input sections first
+            document.getElementById('regionFilter').style.display = "none";
+            document.getElementById('languageFilter').style.display = "none";
+            document.getElementById('currencyFilter').style.display = "none";
+            if (category === "region") {
+                document.getElementById('regionFilter').style.display = "block";
+            } else if (category === "language") {
+                document.getElementById('languageFilter').style.display = "block";
+            } else if (category === "currency") {
+                document.getElementById('currencyFilter').style.display = "block";
+            }
+            // Clear previous results when switching filter category
+            document.getElementById('results').innerHTML = "";
+            document.getElementById('resultsHeader').style.display = "none";
+        });
+
+        // Search by country name event
+        document.getElementById('searchButton').addEventListener('click', function () {
+            resetErrors();
+            const countryName = document.getElementById('countryInput').value.trim();
+            if (!countryName) {
+                document.getElementById('searchError').innerText = "Please enter a country name.";
+                document.getElementById('searchError').style.display = "block";
+                return;
+            }
+            fetch(`https://restcountries.com/v3.1/name/${countryName}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Country not found");
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    displayResults(data);
+                })
+                .catch(error => {
+                    alert(error);
+                });
+        });
+
+        // Filter by region event
+        document.getElementById('regionButton').addEventListener('click', function () {
+            resetErrors();
+            const region = document.getElementById('regionSelect').value;
+            if (!region) {
+                document.getElementById('regionError').innerText = "Please select a region.";
+                document.getElementById('regionError').style.display = "block";
+                return;
+            }
+            fetch(`https://restcountries.com/v3.1/region/${region}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("No countries found for the selected region");
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    displayResults(data);
+                })
+                .catch(error => {
+                    alert(error);
+                });
+        });
+
+        // Filter by language (using language name) event
+        document.getElementById('languageButton').addEventListener('click', function () {
+            resetErrors();
+            const langInput = document.getElementById('languageInput').value.trim().toLowerCase();
+            if (!langInput) {
+                document.getElementById('languageError').innerText = "Please enter a language name.";
+                document.getElementById('languageError').style.display = "block";
+                return;
+            }
+            fetch('https://restcountries.com/v3.1/all')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to fetch countries");
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const filtered = data.filter(country => {
+                        if (!country.languages) return false;
+                        const languageNames = Object.values(country.languages).map(l => l.toLowerCase());
+                        return languageNames.some(name => name.includes(langInput));
+                    });
+                    displayResults(filtered);
+                })
+                .catch(error => {
+                    alert(error);
+                });
+        });
+
+        // Filter by currency (using currency name) event
+        document.getElementById('currencyButton').addEventListener('click', function () {
+            resetErrors();
+            const currencyInput = document.getElementById('currencyInput').value.trim().toLowerCase();
+            if (!currencyInput) {
+                document.getElementById('currencyError').innerText = "Please enter a currency name.";
+                document.getElementById('currencyError').style.display = "block";
+                return;
+            }
+            fetch('https://restcountries.com/v3.1/all')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to fetch countries");
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const filtered = data.filter(country => {
+                        if (!country.currencies) return false;
+                        const currencyNames = Object.values(country.currencies).map(c => c.name.toLowerCase());
+                        return currencyNames.some(name => name.includes(currencyInput));
+                    });
+                    displayResults(filtered);
+                })
+                .catch(error => {
+                    alert(error);
+                });
+        });
+
+        window.addEventListener('load', function () {
+            fetchRandomFact();
+        });
+    </script>
+</body>
+
+</html>

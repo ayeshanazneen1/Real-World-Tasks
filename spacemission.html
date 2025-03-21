@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Launch Mission</title>
+    <style>
+        /* Global Reset & Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            /* Full page background image */
+            background: url("https://images.pexels.com/photos/998641/pexels-photo-998641.jpeg") no-repeat center center fixed;
+            background-size: cover;
+            color: #333;
+        }
+
+        /* Header - Title with transparent background so full image is visible */
+        header {
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+            font-size: 32px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 999;
+        }
+
+        /* Main container: Sidebar and Content */
+        #main-container {
+            display: flex;
+            height: 100vh;
+            background: transparent;
+            align-items: stretch;
+        }
+
+        /* Sidebar Navigation with Black Background and full height */
+        #sidebar {
+            flex: 0 0 250px;
+            background-color: #000;
+            padding: 20px;
+            padding-top: 60px;
+            color: #fff;
+            overflow-y: auto;
+            height: 100vh;
+        }
+
+        #sidebar ul {
+            list-style: none;
+        }
+
+        #sidebar ul li {
+            margin-bottom: 15px;
+        }
+
+        #sidebar ul li a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 18px;
+            display: block;
+            padding: 10px;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+
+        #sidebar ul li a:hover,
+        #sidebar ul li a.active {
+            background-color: #444;
+        }
+
+        /* Content Area - transparent so the background shows through */
+        #content {
+            flex-grow: 1;
+            padding: 20px;
+            margin-top: 80px;
+            overflow-y: auto;
+            background: transparent;
+        }
+
+        /* Search UI Styling (top center with inline input and button) */
+        .search-form {
+            text-align: center;
+            margin: 20px auto;
+        }
+
+        .search-form input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 300px;
+            outline: none;
+        }
+
+        .search-form button {
+            padding: 10px 15px;
+            font-size: 16px;
+            border: 1px solid #fff;
+            background: none;
+            color: #fff;
+            cursor: pointer;
+            outline: none;
+            border-radius: 4px;
+            margin-left: 10px;
+            /* margin between input and button */
+        }
+
+        .search-form button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Launch Card Styling */
+        .launch-card {
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .mission-patch {
+            width: 50px;
+            height: 50px;
+            margin-right: 15px;
+        }
+
+        .launch-card h3 {
+            font-size: 22px;
+            color: #333;
+        }
+
+        .launch-details {
+            margin-top: 10px;
+            line-height: 1.4;
+            font-size: 14px;
+        }
+
+        .detail-item {
+            margin-bottom: 8px;
+        }
+
+        /* Dual Container for List and Calendar in Upcoming/Past Sections */
+        .dual-container {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .launch-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .calendar-container {
+            flex: 0 0 300px;
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            display: block;
+        }
+
+        .calendar-nav {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .calendar-nav button {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #333;
+        }
+
+        .calendar-nav span {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        table.calendar {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        table.calendar th,
+        table.calendar td {
+            border: 1px solid #ddd;
+            padding: 5px;
+            text-align: center;
+            font-size: 12px;
+            height: 40px;
+            vertical-align: middle;
+        }
+
+        table.calendar th {
+            background-color: #f0f0f0;
+        }
+
+        table.calendar td {
+            cursor: pointer;
+        }
+
+        table.calendar td.inactive {
+            background-color: #eee;
+            cursor: default;
+        }
+
+        table.calendar td.highlight {
+            background-color: #ffcc80;
+        }
+
+        #dayLaunchDetails {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>Launch Mission</header>
+    <div id="main-container">
+        <nav id="sidebar">
+            <ul>
+                <li><a href="#" id="latest">Latest Launch</a></li>
+                <li><a href="#" id="next">Next Launch</a></li>
+                <li><a href="#" id="upcoming">Upcoming Launches</a></li>
+                <li><a href="#" id="past">Past Launches</a></li>
+                <li><a href="#" id="searchNav">Search by Launch ID</a></li>
+            </ul>
+        </nav>
+        <div id="content">
+            <!-- Content will be dynamically loaded here -->
+        </div>
+    </div>
+
+    <script>
+        // Global variables for calendar view in list sections
+        let currentLaunches = [];
+        let currentYear = (new Date()).getFullYear();
+        let currentMonth = (new Date()).getMonth(); // 0-indexed
+
+        // Helper: Format date as YYYY-MM-DD
+        function formatDateString(year, month, day) {
+            const m = (month + 1).toString().padStart(2, '0');
+            const d = day.toString().padStart(2, '0');
+            return `${year}-${m}-${d}`;
+        }
+
+        // Render launch details in a user-friendly manner, skipping null/empty entries
+        function renderLaunchDetails(obj) {
+            const container = document.createElement("div");
+            container.className = "launch-details";
+            for (const key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    let value = obj[key];
+                    if (value === null || value === undefined || value === "") continue;
+
+                    // If the value is an object or array, try to extract a user-friendly representation.
+                    let formattedValue;
+                    if (typeof value === "object") {
+                        if (Array.isArray(value)) {
+                            const arr = value.filter(item => item !== null && item !== undefined && item !== "");
+                            if (arr.length === 0) continue;
+                            // For array elements that are objects, use their 'name' property if available.
+                            formattedValue = arr.map(item => {
+                                if (typeof item === "object") {
+                                    return item.name ? item.name : "[Object]";
+                                }
+                                return item;
+                            }).join(", ");
+                        } else {
+                            // For objects, if a 'name' property exists, use it; otherwise, list key-value pairs.
+                            if (value.name) {
+                                formattedValue = value.name;
+                            } else {
+                                let parts = [];
+                                for (const subKey in value) {
+                                    if (value.hasOwnProperty(subKey)) {
+                                        const subValue = value[subKey];
+                                        if (subValue === null || subValue === undefined || subValue === "") continue;
+                                        parts.push(subKey + ": " + subValue);
+                                    }
+                                }
+                                if (parts.length === 0) continue;
+                                formattedValue = parts.join(", ");
+                            }
+                        }
+                    } else {
+                        formattedValue = value;
+                    }
+                    const detailDiv = document.createElement("div");
+                    detailDiv.className = "detail-item";
+                    detailDiv.innerHTML = "<strong>" + key + ":</strong> " + formattedValue;
+                    container.appendChild(detailDiv);
+                }
+            }
+            return container;
+        }
+
+        // Create a launch card that shows all available details in a clean format
+        function createLaunchCard(launch) {
+            const card = document.createElement("div");
+            card.className = "launch-card";
+
+            // Card header with mission patch (if available) and launch name
+            const headerDiv = document.createElement("div");
+            headerDiv.className = "card-header";
+            if (launch.links && launch.links.patch && launch.links.patch.small) {
+                const img = document.createElement("img");
+                img.src = launch.links.patch.small;
+                img.alt = launch.name;
+                img.className = "mission-patch";
+                headerDiv.appendChild(img);
+            }
+            const title = document.createElement("h3");
+            title.textContent = launch.name || "No Name Available";
+            headerDiv.appendChild(title);
+            card.appendChild(headerDiv);
+
+            // Append launch details (skipping null/empty entries)
+            const detailsContainer = renderLaunchDetails(launch);
+            card.appendChild(detailsContainer);
+            return card;
+        }
+
+        // Display a single launch (for Latest, Next, or Search result)
+        function displayLaunch(launch) {
+            const contentDiv = document.getElementById("content");
+            contentDiv.innerHTML = "";
+            const card = createLaunchCard(launch);
+            contentDiv.appendChild(card);
+        }
+
+        // Display search UI (top center search bar with input and button side-by-side)
+        function displaySearchUI() {
+            const contentDiv = document.getElementById("content");
+            contentDiv.innerHTML = "";
+            const searchContainer = document.createElement("div");
+            searchContainer.className = "search-form";
+
+            const input = document.createElement("input");
+            input.type = "text";
+            input.placeholder = "Enter Launch ID";
+            input.id = "launchIdInput";
+
+            const button = document.createElement("button");
+            button.textContent = "Search";
+            button.addEventListener("click", function () {
+                const id = input.value.trim();
+                if (id === "") {
+                    alert("Please enter a Launch ID.");
+                    return;
+                }
+                fetchData("https://api.spacexdata.com/v5/launches/" + id, function (data) {
+                    displayLaunch(data);
+                });
+            });
+            input.addEventListener("keydown", function (event) {
+                if (event.key === "Enter") {
+                    button.click();
+                }
+            });
+            searchContainer.appendChild(input);
+            searchContainer.appendChild(button);
+            contentDiv.appendChild(searchContainer);
+        }
+
+        // Render a small calendar view (used in Upcoming and Past sections)
+        function renderSmallCalendar() {
+            const calendarContainer = document.createElement("div");
+            calendarContainer.className = "calendar-container";
+
+            // Calendar Navigation with icons
+            const navDiv = document.createElement("div");
+            navDiv.className = "calendar-nav";
+            const prevBtn = document.createElement("button");
+            prevBtn.innerHTML = "&#9664;"; // left arrow icon
+            prevBtn.addEventListener("click", function () {
+                currentMonth--;
+                if (currentMonth < 0) {
+                    currentMonth = 11;
+                    currentYear--;
+                }
+                updateCalendar(calendarContainer);
+            });
+            const monthLabel = document.createElement("span");
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            monthLabel.textContent = monthNames[currentMonth] + " " + currentYear;
+            const nextBtn = document.createElement("button");
+            nextBtn.innerHTML = "&#9654;"; // right arrow icon
+            nextBtn.addEventListener("click", function () {
+                currentMonth++;
+                if (currentMonth > 11) {
+                    currentMonth = 0;
+                    currentYear++;
+                }
+                updateCalendar(calendarContainer);
+            });
+            navDiv.appendChild(prevBtn);
+            navDiv.appendChild(monthLabel);
+            navDiv.appendChild(nextBtn);
+            calendarContainer.appendChild(navDiv);
+
+            // Calendar Table
+            const table = document.createElement("table");
+            table.className = "calendar";
+            const thead = document.createElement("thead");
+            const headerRow = document.createElement("tr");
+            ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach(day => {
+                const th = document.createElement("th");
+                th.textContent = day;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            const tbody = document.createElement("tbody");
+            table.appendChild(tbody);
+            calendarContainer.appendChild(table);
+
+            // Optional details for a selected day
+            const detailsDiv = document.createElement("div");
+            detailsDiv.id = "dayLaunchDetails";
+            calendarContainer.appendChild(detailsDiv);
+
+            updateCalendar(calendarContainer);
+            return calendarContainer;
+        }
+
+        // Update the calendar table inside the given container
+        function updateCalendar(container) {
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            const navDiv = container.querySelector(".calendar-nav");
+            navDiv.querySelector("span").textContent = monthNames[currentMonth] + " " + currentYear;
+            const tbody = container.querySelector("tbody");
+            tbody.innerHTML = "";
+            // Determine first day of month and days in month
+            const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const weeks = Math.ceil((firstDay + daysInMonth) / 7);
+            let date = 1;
+            for (let i = 0; i < weeks; i++) {
+                const row = document.createElement("tr");
+                for (let j = 0; j < 7; j++) {
+                    const cell = document.createElement("td");
+                    if (i === 0 && j < firstDay) {
+                        cell.className = "inactive";
+                        cell.textContent = "";
+                    } else if (date > daysInMonth) {
+                        cell.className = "inactive";
+                        cell.textContent = "";
+                    } else {
+                        cell.textContent = date;
+                        const cellDateStr = formatDateString(currentYear, currentMonth, date);
+                        // Highlight cell if there is a launch on this date
+                        const launchesOnThisDay = currentLaunches.filter(launch => {
+                            const launchDate = new Date(launch.date_utc);
+                            const launchDateStr = launchDate.toISOString().split("T")[0];
+                            return launchDateStr === cellDateStr;
+                        });
+                        if (launchesOnThisDay.length > 0) {
+                            cell.classList.add("highlight");
+                            cell.addEventListener("click", function () {
+                                showDayLaunchDetails(cellDateStr, launchesOnThisDay);
+                            });
+                        }
+                        date++;
+                    }
+                    row.appendChild(cell);
+                }
+                tbody.appendChild(row);
+            }
+        }
+
+        // Show launch details for a selected day (appended under the calendar)
+        function showDayLaunchDetails(dateStr, launchesOnThisDay) {
+            const detailsDiv = document.getElementById("dayLaunchDetails");
+            detailsDiv.innerHTML = "<strong>Launches on " + dateStr + ":</strong>";
+            launchesOnThisDay.forEach(launch => {
+                const card = createLaunchCard(launch);
+                detailsDiv.appendChild(card);
+            });
+        }
+
+        // Display list of launch cards along with a small calendar view on the right
+        function displayListAndCalendar(launches) {
+            currentLaunches = launches;
+            // Set calendar's current month/year based on the first launch if available
+            if (launches.length > 0) {
+                const firstDate = new Date(launches[0].date_utc);
+                currentYear = firstDate.getFullYear();
+                currentMonth = firstDate.getMonth();
+            } else {
+                currentYear = (new Date()).getFullYear();
+                currentMonth = (new Date()).getMonth();
+            }
+            const contentDiv = document.getElementById("content");
+            contentDiv.innerHTML = "";
+            const dualContainer = document.createElement("div");
+            dualContainer.className = "dual-container";
+
+            // Left: Launch list
+            const listDiv = document.createElement("div");
+            listDiv.className = "launch-list";
+            launches.forEach(launch => {
+                // Only display the card if it has meaningful (non-null) information.
+                const card = createLaunchCard(launch);
+                listDiv.appendChild(card);
+            });
+
+            // Right: Small calendar view
+            const calendarDiv = renderSmallCalendar();
+
+            dualContainer.appendChild(listDiv);
+            dualContainer.appendChild(calendarDiv);
+            contentDiv.appendChild(dualContainer);
+        }
+
+        // Generic fetch function
+        async function fetchData(url, callback) {
+            const contentDiv = document.getElementById("content");
+            contentDiv.innerHTML = "<p>Loading...</p>";
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error("HTTP error! Status: " + response.status);
+                }
+                const data = await response.json();
+                callback(data);
+            } catch (error) {
+                contentDiv.innerHTML = "<p>Error: " + error.message + "</p>";
+            }
+        }
+
+        // Utility: Set the active link in the sidebar
+        function setActiveLink(activeId) {
+            const links = document.querySelectorAll("#sidebar ul li a");
+            links.forEach(link => {
+                if (link.id === activeId) {
+                    link.classList.add("active");
+                } else {
+                    link.classList.remove("active");
+                }
+            });
+        }
+
+        // Event Listeners for Sidebar Navigation
+        document.addEventListener("DOMContentLoaded", function () {
+            const latestLink = document.getElementById("latest");
+            const nextLink = document.getElementById("next");
+            const upcomingLink = document.getElementById("upcoming");
+            const pastLink = document.getElementById("past");
+            const searchNav = document.getElementById("searchNav");
+
+            latestLink.addEventListener("click", function (e) {
+                e.preventDefault();
+                setActiveLink("latest");
+                fetchData("https://api.spacexdata.com/v5/launches/latest", function (data) {
+                    displayLaunch(data);
+                });
+            });
+            nextLink.addEventListener("click", function (e) {
+                e.preventDefault();
+                setActiveLink("next");
+                fetchData("https://api.spacexdata.com/v5/launches/next", function (data) {
+                    displayLaunch(data);
+                });
+            });
+            upcomingLink.addEventListener("click", function (e) {
+                e.preventDefault();
+                setActiveLink("upcoming");
+                fetchData("https://api.spacexdata.com/v5/launches/upcoming", function (data) {
+                    displayListAndCalendar(data);
+                });
+            });
+            pastLink.addEventListener("click", function (e) {
+                e.preventDefault();
+                setActiveLink("past");
+                fetchData("https://api.spacexdata.com/v5/launches/past", function (data) {
+                    displayListAndCalendar(data);
+                });
+            });
+            searchNav.addEventListener("click", function (e) {
+                e.preventDefault();
+                setActiveLink("searchNav");
+                displaySearchUI();
+            });
+
+            // Show Search by Launch ID as default when the page is accessed.
+            setActiveLink("searchNav");
+            displaySearchUI();
+        });
+    </script>
+</body>
+
+</html>

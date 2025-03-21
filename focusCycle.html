@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Focus Cycle</title>
+    <!-- Include Moon Dance font from Google Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Moon+Dance&display=swap">
+    <!-- Include Chart.js from a CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Basic reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Base body styles */
+        body {
+            font-family: Arial, sans-serif;
+            transition: background 0.5s, color 0.5s;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Title at the top */
+        h1 {
+            text-align: center;
+            font-family: 'Moon Dance', cursive;
+            font-size: 60px;
+            margin-bottom: 30px;
+            transition: color 0.5s;
+        }
+
+        /* Session state text */
+        #sessionState {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+            transition: color 0.5s;
+        }
+
+        /* Timer styling - each digit is separate */
+        .timer {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .timer span {
+            display: inline-block;
+            font-size: 100px;
+            font-weight: bold;
+            margin: 0 5px;
+            position: relative;
+            perspective: 400px;
+            /* for flip effect */
+            transition: color 0.5s;
+        }
+
+        .digit {
+            width: 60px;
+            text-align: center;
+            transform-style: preserve-3d;
+            display: inline-block;
+        }
+
+        .colon {
+            width: 30px;
+        }
+
+        /* Flip animation for changing digit */
+        .flip {
+            animation: flipDigit 0.5s;
+        }
+
+        @keyframes flipDigit {
+            0% {
+                transform: rotateX(0deg);
+            }
+
+            30% {
+                transform: rotateX(-90deg);
+            }
+
+            60% {
+                transform: rotateX(-90deg);
+            }
+
+            100% {
+                transform: rotateX(0deg);
+            }
+        }
+
+        /* Break activity suggestion */
+        #breakActivity {
+            text-align: center;
+            font-size: 32px;
+            /* Bigger font size */
+            font-family: 'Moon Dance', cursive;
+            /* Moon Dance font */
+            margin-bottom: 20px;
+            display: none;
+            /* hidden by default */
+            transition: color 0.5s;
+        }
+
+        /* Controls (Start/Stop) */
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .controls button {
+            padding: 10px 20px;
+            margin: 0 10px;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        #startBtn {
+            background: #28a745;
+            color: #fff;
+        }
+
+        #stopBtn {
+            background: #dc3545;
+            color: #fff;
+        }
+
+        #startBtn:disabled,
+        #stopBtn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Chart container */
+        .chart-container {
+            max-width: 600px;
+            margin: 0 auto 40px auto;
+            border-radius: 8px;
+            transition: border 0.5s;
+            padding: 10px;
+        }
+
+        #studyChart {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        /* Settings icon in top-right corner */
+        .settings-icon {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            font-size: 28px;
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.5s;
+        }
+
+        /* Settings overlay (hidden by default) */
+        .settings-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        .settings-overlay.active {
+            display: flex;
+        }
+
+        .settings-window {
+            background: #fff;
+            color: #333;
+            padding: 20px 30px;
+            border-radius: 6px;
+            min-width: 300px;
+            position: relative;
+        }
+
+        .settings-window h2 {
+            margin-bottom: 20px;
+            font-weight: normal;
+        }
+
+        .settings-window label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .settings-window input {
+            width: 80px;
+            padding: 5px;
+            margin-bottom: 15px;
+        }
+
+        #saveSettingsBtn {
+            padding: 8px 16px;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        #saveSettingsBtn:hover {
+            background: #0056b3;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        /* Focus mode (reddish gradient) */
+        .focus-mode {
+            background: linear-gradient(to bottom right, #f7caca, #954343);
+            color: #600000;
+        }
+
+        .focus-mode h1,
+        .focus-mode h2,
+        .focus-mode span,
+        .focus-mode .settings-icon,
+        .focus-mode #breakActivity {
+            color: #600000;
+        }
+
+        .focus-mode .chart-container {
+            background: transparent;
+            border: 2px solid #ffc7c7;
+            /* lighter red outline */
+        }
+
+        /* Break mode (bluish gradient) */
+        .break-mode {
+            background: linear-gradient(to bottom right, #a3cafc, #4468a3);
+            color: #002060;
+        }
+
+        .break-mode h1,
+        .break-mode h2,
+        .break-mode span,
+        .break-mode .settings-icon,
+        .break-mode #breakActivity {
+            color: #002060;
+        }
+
+        .break-mode .chart-container {
+            background: transparent;
+            border: 2px solid #b3d4ff;
+            /* lighter blue outline */
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Title -->
+    <h1>Focus Cycle</h1>
+
+    <!-- Settings Icon -->
+    <div class="settings-icon" id="openSettings">&#9881;</div>
+
+    <!-- Session State -->
+    <h2 id="sessionState">Focus</h2>
+
+    <!-- Timer (each digit separate for flip animation) -->
+    <div class="timer">
+        <span class="digit" id="minTens">2</span>
+        <span class="digit" id="minOnes">5</span>
+        <span class="colon">:</span>
+        <span class="digit" id="secTens">0</span>
+        <span class="digit" id="secOnes">0</span>
+    </div>
+
+    <!-- Break Activity Suggestion -->
+    <div id="breakActivity"></div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <button id="startBtn">Start</button>
+        <button id="stopBtn" disabled>Stop</button>
+    </div>
+
+    <!-- Chart Container -->
+    <div class="chart-container">
+        <canvas id="studyChart"></canvas>
+    </div>
+
+    <!-- Settings Overlay -->
+    <div class="settings-overlay" id="settingsOverlay">
+        <div class="settings-window">
+            <span class="close-btn" id="closeSettings">&times;</span>
+            <h2>Customize Study Session</h2>
+            <label for="focusTime">Focus Time:</label>
+            <input type="number" id="focusTime" min="1">
+            <label for="breakTime">Break Time:</label>
+            <input type="number" id="breakTime" min="1">
+            <button id="saveSettingsBtn">Save</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // References
+            const body = document.body;
+            const sessionStateEl = document.getElementById('sessionState');
+            const breakActivityEl = document.getElementById('breakActivity');
+
+            // Digits
+            const minTensEl = document.getElementById('minTens');
+            const minOnesEl = document.getElementById('minOnes');
+            const secTensEl = document.getElementById('secTens');
+            const secOnesEl = document.getElementById('secOnes');
+
+            // Buttons
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+
+            // Settings Overlay
+            const openSettingsBtn = document.getElementById('openSettings');
+            const closeSettingsBtn = document.getElementById('closeSettings');
+            const settingsOverlay = document.getElementById('settingsOverlay');
+            const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+
+            // Inputs for custom times
+            const focusInput = document.getElementById('focusTime');
+            const breakInput = document.getElementById('breakTime');
+
+            // Timer logic variables
+            let timer = null;               // reference to our interval
+            let sessionInProgress = false;  // are we in a session (focus+break)
+            let isPaused = false;           // is the session paused
+            let isFocus = true;             // are we in focus or break
+            let timeLeft = 25 * 60;         // default 25 minutes
+            let focusDuration = 25 * 60;
+            let breakDuration = 5 * 60;
+
+            // We'll store old digit values to detect changes
+            let oldMinTens = 2;
+            let oldMinOnes = 5;
+            let oldSecTens = 0;
+            let oldSecOnes = 0;
+
+            // Break activities
+            const breakActivities = [
+                "I recommend walking with a pace during the break",
+                "I recommend doing some streches during the break",
+                "I recommend hydrating yourself during the break",
+                "I recommend doing some meditation during the break",
+                "I recommend giving your eyes some rest during the break"
+            ];
+
+            // Chart.js instance
+            let studyChart;
+
+            // Load user preferences from local storage (if any)
+            function loadUserPreferences() {
+                let storedFocus = localStorage.getItem('focusSetting');
+                let storedBreak = localStorage.getItem('breakSetting');
+
+                if (storedFocus) {
+                    focusInput.value = storedFocus;
+                    focusDuration = parseInt(storedFocus, 10) * 60;
+                } else {
+                    // If nothing in local storage, set the input to default
+                    focusInput.value = 25;
+                }
+                if (storedBreak) {
+                    breakInput.value = storedBreak;
+                    breakDuration = parseInt(storedBreak, 10) * 60;
+                } else {
+                    // If nothing in local storage, set the input to default
+                    breakInput.value = 5;
+                }
+                // If not in a session, update timeLeft to reflect new focus time
+                if (!sessionInProgress) {
+                    timeLeft = focusDuration;
+                }
+            }
+
+            // Save user preferences to local storage
+            function saveUserPreferences() {
+                localStorage.setItem('focusSetting', focusInput.value);
+                localStorage.setItem('breakSetting', breakInput.value);
+            }
+
+            // Utility to get today's date (YYYY-MM-DD)
+            function getTodayDateStr() {
+                return new Date().toISOString().slice(0, 10);
+            }
+
+            // Add completed focus/break times to localStorage
+            function addSessionToLocalStorage(focusMins, breakMins) {
+                const date = getTodayDateStr();
+                let dataStr = localStorage.getItem('studyData');
+                let data = dataStr ? JSON.parse(dataStr) : {};
+
+                if (!data[date]) {
+                    data[date] = { focus: 0, break: 0, total: 0 };
+                }
+                data[date].focus += focusMins;
+                data[date].break += breakMins;
+                data[date].total += (focusMins + breakMins);
+
+                localStorage.setItem('studyData', JSON.stringify(data));
+                updateChart();
+            }
+
+            // Update chart to show only today's focus/break/total
+            function updateChart() {
+                const date = getTodayDateStr();
+                let dataStr = localStorage.getItem('studyData');
+                let data = dataStr ? JSON.parse(dataStr) : {};
+                let focus = 0, brk = 0, total = 0;
+
+                if (data[date]) {
+                    focus = data[date].focus || 0;
+                    brk = data[date].break || 0;
+                    total = data[date].total || 0;
+                }
+
+                studyChart.data.datasets[0].data = [focus, brk, total];
+                studyChart.update();
+            }
+
+            // Initialize Chart.js
+            function initChart() {
+                const ctx = document.getElementById('studyChart').getContext('2d');
+                studyChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Focus', 'Break', 'Total'],
+                        datasets: [
+                            {
+                                label: 'Today (minutes)',
+                                data: [0, 0, 0],
+                                backgroundColor: [
+                                    'rgba(75, 192, 192, 0.6)',
+                                    'rgba(255, 159, 64, 0.6)',
+                                    'rgba(153, 102, 255, 0.6)'
+                                ],
+                                borderColor: [
+                                    'rgba(75, 192, 192, 1)',
+                                    'rgba(255, 159, 64, 1)',
+                                    'rgba(153, 102, 255, 1)'
+                                ],
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                ticks: { color: '#000' },
+                                title: {
+                                    display: true,
+                                    text: 'Session Details',
+                                    color: '#000'
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: { color: '#000' },
+                                title: {
+                                    display: true,
+                                    text: 'Minutes',
+                                    color: '#000'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#000'
+                                }
+                            }
+                        }
+                    }
+                });
+                updateChart();
+            }
+
+            // Dynamically update Chart.js colors for good contrast
+            function updateChartColors(mode) {
+                if (mode === 'focus') {
+                    // Dark red
+                    studyChart.options.scales.x.ticks.color = '#600000';
+                    studyChart.options.scales.x.title.color = '#600000';
+                    studyChart.options.scales.y.ticks.color = '#600000';
+                    studyChart.options.scales.y.title.color = '#600000';
+                    studyChart.options.plugins.legend.labels.color = '#600000';
+                } else if (mode === 'break') {
+                    // Dark blue
+                    studyChart.options.scales.x.ticks.color = '#002060';
+                    studyChart.options.scales.x.title.color = '#002060';
+                    studyChart.options.scales.y.ticks.color = '#002060';
+                    studyChart.options.scales.y.title.color = '#002060';
+                    studyChart.options.plugins.legend.labels.color = '#002060';
+                } else {
+                    // Default
+                    studyChart.options.scales.x.ticks.color = '#000';
+                    studyChart.options.scales.x.title.color = '#000';
+                    studyChart.options.scales.y.ticks.color = '#000';
+                    studyChart.options.scales.y.title.color = '#000';
+                    studyChart.options.plugins.legend.labels.color = '#000';
+                }
+                studyChart.update();
+            }
+
+            // Flip animation helper for a single digit (only if value changes)
+            function flipDigit(digitEl, newVal, oldVal) {
+                if (newVal !== oldVal) {
+                    digitEl.textContent = newVal;
+                    // Remove any existing flip class, then reflow, then add it
+                    digitEl.classList.remove('flip');
+                    void digitEl.offsetWidth;
+                    digitEl.classList.add('flip');
+                }
+            }
+
+            // Update the timer display, digit by digit
+            function updateTimerDisplay() {
+                let minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+
+                let newMinTens = Math.floor(minutes / 10);
+                let newMinOnes = minutes % 10;
+                let newSecTens = Math.floor(seconds / 10);
+                let newSecOnes = seconds % 10;
+
+                // Flip only changed digits
+                flipDigit(minTensEl, newMinTens, oldMinTens);
+                flipDigit(minOnesEl, newMinOnes, oldMinOnes);
+                flipDigit(secTensEl, newSecTens, oldSecTens);
+                flipDigit(secOnesEl, newSecOnes, oldSecOnes);
+
+                // Store new values as old for next check
+                oldMinTens = newMinTens;
+                oldMinOnes = newMinOnes;
+                oldSecTens = newSecTens;
+                oldSecOnes = newSecOnes;
+            }
+
+            // Remove the flip class after animation ends to ensure a single smooth flip
+            [minTensEl, minOnesEl, secTensEl, secOnesEl].forEach(digit => {
+                digit.addEventListener('animationend', () => {
+                    digit.classList.remove('flip');
+                });
+            });
+
+            // Switch body to focus mode
+            function setFocusBackground() {
+                body.classList.remove('break-mode');
+                body.classList.add('focus-mode');
+                updateChartColors('focus');
+            }
+
+            // Switch body to break mode
+            function setBreakBackground() {
+                body.classList.remove('focus-mode');
+                body.classList.add('break-mode');
+                updateChartColors('break');
+            }
+
+            // Clear background modes (session complete or ended)
+            function clearBackgroundModes() {
+                body.classList.remove('focus-mode');
+                body.classList.remove('break-mode');
+                updateChartColors('default');
+            }
+
+            // The main timer tick function
+            function timerTick() {
+                timeLeft--;
+                if (timeLeft < 0) {
+                    if (isFocus) {
+                        // Switch to break
+                        isFocus = false;
+                        timeLeft = breakDuration;
+                        sessionStateEl.textContent = 'Break';
+                        setBreakBackground();
+
+                        // Show random break activity
+                        const randomIndex = Math.floor(Math.random() * breakActivities.length);
+                        breakActivityEl.textContent = breakActivities[randomIndex];
+                        breakActivityEl.style.display = 'block';
+                    } else {
+                        // Break finished -> session complete
+                        clearInterval(timer);
+                        timer = null;
+                        sessionInProgress = false;
+                        isPaused = false;
+                        startBtn.disabled = false;
+                        stopBtn.disabled = true;
+                        sessionStateEl.textContent = 'Session Complete';
+                        timeLeft = 0; // ensure timer is zeroed
+                        updateTimerDisplay();
+                        breakActivityEl.style.display = 'none';
+                        clearBackgroundModes();
+
+                        // Record the completed focus/break time in localStorage
+                        addSessionToLocalStorage(focusDuration / 60, breakDuration / 60);
+                        return;
+                    }
+                }
+                updateTimerDisplay();
+            }
+
+            // Start or resume session
+            function startOrResumeSession() {
+                // If not in a session, start fresh
+                if (!sessionInProgress) {
+                    // Use current local storage values
+                    focusDuration = parseInt(focusInput.value, 10) * 60;
+                    breakDuration = parseInt(breakInput.value, 10) * 60;
+                    isFocus = true;
+                    timeLeft = focusDuration;
+                    sessionStateEl.textContent = 'Focus';
+                    setFocusBackground();
+                    breakActivityEl.style.display = 'none';
+                    updateTimerDisplay();
+
+                    sessionInProgress = true;
+                    isPaused = false;
+                } else {
+                    // If we're in a session but paused, resume
+                    if (isPaused) {
+                        isPaused = false;
+                        sessionStateEl.textContent = isFocus ? 'Focus' : 'Break';
+                    } else {
+                        // If we're not paused, do nothing
+                        return;
+                    }
+                }
+
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                timer = setInterval(timerTick, 1000);
+            }
+
+            // Stop (pause) session
+            function stopSession() {
+                if (sessionInProgress && !isPaused) {
+                    clearInterval(timer);
+                    timer = null;
+                    isPaused = true;
+                    sessionStateEl.textContent = 'Session Paused';
+                    breakActivityEl.style.display = 'none';
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                }
+            }
+
+            // Handle saving settings
+            function handleSaveSettings() {
+                saveUserPreferences();
+
+                // Immediately update durations from inputs
+                focusDuration = parseInt(focusInput.value, 10) * 60;
+                breakDuration = parseInt(breakInput.value, 10) * 60;
+
+                // If we're not in session or it's paused, update timeLeft
+                if (!sessionInProgress || isPaused) {
+                    timeLeft = focusDuration;
+                    updateTimerDisplay();
+                }
+
+                closeSettings();
+            }
+
+            // Toggle settings overlay
+            function openSettings() {
+                settingsOverlay.classList.add('active');
+            }
+            function closeSettings() {
+                settingsOverlay.classList.remove('active');
+            }
+
+            // Initialize
+            loadUserPreferences();     // Load user times from local storage
+            initChart();              // Init the chart
+            updateTimerDisplay();     // Ensure timer display is correct
+            setFocusBackground();     // Default to focus background
+
+            // Attach event listeners
+            startBtn.addEventListener('click', startOrResumeSession);
+            stopBtn.addEventListener('click', stopSession);
+
+            openSettingsBtn.addEventListener('click', openSettings);
+            closeSettingsBtn.addEventListener('click', closeSettings);
+            saveSettingsBtn.addEventListener('click', handleSaveSettings);
+        });
+    </script>
+</body>
+
+</html>

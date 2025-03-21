@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Digital Gallery</title>
+    <!-- Google Font: Moon Dance -->
+    <link href="https://fonts.googleapis.com/css2?family=Moon+Dance&display=swap" rel="stylesheet">
+    <style>
+        /* General Styles */
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+            /* lighter grey */
+        }
+
+        header {
+            /* No background on the top container */
+            background: none;
+            color: grey;
+            padding: 1rem;
+            text-align: center;
+            position: relative;
+        }
+
+        header h1 {
+            font-family: 'Moon Dance', cursive;
+            margin: 0;
+            font-size: 2rem;
+            color: grey;
+        }
+
+        /* Create Gallery Button: positioned at the bottom right of the header */
+        #create-gallery-btn {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: grey;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        #create-gallery-btn:hover {
+            background: darkgrey;
+        }
+
+        /* Layout Container */
+        #container {
+            display: flex;
+            padding: 1rem;
+        }
+
+        /* Images Section */
+        #images-section {
+            flex: 3;
+            margin-right: 1rem;
+        }
+
+        #images-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-gap: 1rem;
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+            transition: box-shadow 0.3s;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            /* light black shadow on hover */
+        }
+
+        .card img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .card p {
+            font-size: 0.9rem;
+            margin: 0.5rem;
+            color: #333;
+        }
+
+        /* Save icon button overlaid on image */
+        .save-icon {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: none;
+            /* no background */
+            color: white;
+            border: none;
+            border-radius: 50%;
+            padding: 5px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            line-height: 1;
+            z-index: 2;
+        }
+
+        .save-icon:hover {
+            background: none;
+        }
+
+        /* Overlay for showing image details on hover */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            opacity: 0;
+            transition: opacity 0.3s;
+            padding: 10px;
+            font-size: 0.8rem;
+            overflow-y: auto;
+            z-index: 1;
+        }
+
+        .card:hover .overlay {
+            opacity: 1;
+        }
+
+        /* Loading label (no background) */
+        #loading {
+            text-align: center;
+            margin: 1rem 0;
+            font-size: 1.2rem;
+            color: #333;
+        }
+
+        /* Load More Button */
+        #load-more-btn {
+            display: block;
+            margin: 1rem auto;
+            padding: 0.5rem 1rem;
+            border: none;
+            background: #007bff;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        #load-more-btn:hover {
+            background: #0056b3;
+        }
+
+        /* Mini Galleries Section */
+        #gallery-container {
+            flex: 1;
+            background: #fff;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            height: fit-content;
+        }
+
+        #gallery-container h2 {
+            margin-top: 0;
+            font-size: 1.5rem;
+            color: #333;
+            text-align: center;
+            font-family: 'Moon Dance', cursive;
+        }
+
+        #gallery-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #gallery-list li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 0.5rem;
+            cursor: pointer;
+        }
+
+        #gallery-list li img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            margin-right: 10px;
+            border-radius: 4px;
+        }
+
+        #gallery-list li span {
+            font-size: 1rem;
+            color: #333;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+        }
+
+        .modal-content label {
+            display: block;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .modal-content input[type="text"] {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        #modal-images-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        #modal-images-container img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            cursor: pointer;
+            border: 2px solid transparent;
+            border-radius: 4px;
+        }
+
+        #modal-images-container img.selected {
+            border-color: blue;
+        }
+
+        .modal-buttons {
+            text-align: right;
+        }
+
+        .modal-buttons button {
+            padding: 0.5rem 1rem;
+            margin-left: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        /* Confirm button with light grey background */
+        .modal-buttons button#modal-confirm-btn {
+            background: #d3d3d3;
+            color: #000;
+        }
+
+        .modal-buttons button#modal-confirm-btn:hover {
+            background: #c0c0c0;
+        }
+
+        .modal-buttons button#modal-cancel-btn {
+            background: #dc3545;
+            color: #fff;
+        }
+
+        .modal-buttons button#modal-cancel-btn:hover {
+            background: #c82333;
+        }
+
+        /* Modal for Viewing Gallery */
+        #gallery-view-modal .modal-content {
+            max-width: 700px;
+        }
+
+        #gallery-view-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-gap: 10px;
+            margin-top: 10px;
+        }
+
+        #gallery-view-images img {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+
+        #gallery-view-close {
+            display: block;
+            margin-top: 10px;
+            padding: 0.5rem 1rem;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        #gallery-view-close:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Digital Gallery</h1>
+        <button id="create-gallery-btn">Create Your Gallery</button>
+    </header>
+
+    <div id="container">
+        <!-- Images Section -->
+        <div id="images-section">
+            <div id="images-container">
+                <!-- Image cards will be loaded here -->
+            </div>
+            <div id="loading"></div>
+            <button id="load-more-btn">Load More Images</button>
+        </div>
+        <!-- Mini Galleries Section -->
+        <div id="gallery-container">
+            <h2>Mini Galleries</h2>
+            <ul id="gallery-list">
+                <!-- Mini galleries list items will be added here -->
+            </ul>
+        </div>
+    </div>
+
+    <!-- Modal for Creating Mini Gallery -->
+    <div id="gallery-modal" class="modal">
+        <div class="modal-content">
+            <h2>Create Your Mini Gallery</h2>
+            <label for="modal-theme-input">Gallery Theme:</label>
+            <input type="text" id="modal-theme-input" placeholder="Enter gallery theme">
+            <label>Select Images from Saved Images:</label>
+            <div id="modal-images-container">
+                <!-- Thumbnails of saved images -->
+            </div>
+            <div class="modal-buttons">
+                <button id="modal-confirm-btn">Confirm</button>
+                <button id="modal-cancel-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Viewing Gallery -->
+    <div id="gallery-view-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="view-gallery-title"></h2>
+            <div id="gallery-view-images">
+                <!-- Gallery images will be displayed here -->
+            </div>
+            <button id="gallery-view-close">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Global variables for image loading
+        let currentStartId = 1;
+        const initialBatch = 500;
+        const loadMoreBatch = 20;
+
+        // Load saved images and galleries from localStorage (or initialize empty arrays)
+        let savedImages = JSON.parse(localStorage.getItem('savedImages')) || [];
+        let galleries = JSON.parse(localStorage.getItem('galleries')) || [];
+
+        const imagesContainer = document.getElementById('images-container');
+        const loadingIndicator = document.getElementById('loading');
+        const loadMoreBtn = document.getElementById('load-more-btn');
+        const galleryList = document.getElementById('gallery-list');
+        const createGalleryBtn = document.getElementById('create-gallery-btn');
+
+        // Modal elements for creating a gallery
+        const galleryModal = document.getElementById('gallery-modal');
+        const modalThemeInput = document.getElementById('modal-theme-input');
+        const modalImagesContainer = document.getElementById('modal-images-container');
+        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
+
+        // Modal elements for viewing a gallery
+        const galleryViewModal = document.getElementById('gallery-view-modal');
+        const viewGalleryTitle = document.getElementById('view-gallery-title');
+        const galleryViewImages = document.getElementById('gallery-view-images');
+        const galleryViewClose = document.getElementById('gallery-view-close');
+
+        // Update localStorage for saved images
+        function updateSavedImagesStorage() {
+            localStorage.setItem('savedImages', JSON.stringify(savedImages));
+        }
+
+        // Update localStorage for galleries
+        function updateGalleriesStorage() {
+            localStorage.setItem('galleries', JSON.stringify(galleries));
+        }
+
+        // Fetch museum object by ID and create an image card with overlay details
+        function fetchObject(id) {
+            const url = 'https://collectionapi.metmuseum.org/public/collection/v1/objects/' + id;
+            return fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && (data.primaryImageSmall || data.primaryImage)) {
+                        const imgSrc = data.primaryImageSmall || data.primaryImage;
+                        // Create card element
+                        const card = document.createElement('div');
+                        card.className = 'card';
+
+                        // Create image element
+                        const img = document.createElement('img');
+                        img.src = imgSrc;
+                        img.alt = data.title || 'Museum Art';
+                        if (data.objectURL) {
+                            img.addEventListener('click', () => {
+                                window.open(data.objectURL, '_blank');
+                            });
+                        }
+                        card.appendChild(img);
+
+                        // Save icon button (without background, white in color)
+                        const saveBtn = document.createElement('button');
+                        saveBtn.className = 'save-icon';
+                        saveBtn.innerHTML = `
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-save" viewBox="0 0 16 16">
+  <path d="M8.5 1.5A1.5 1.5 0 0 1 10 3v1h3.5A1.5 1.5 0 0 1 15 5.5v8A1.5 1.5 0 0 1 13.5 15h-11A1.5 1.5 0 0 1 2 13.5v-8A1.5 1.5 0 0 1 3.5 4H7V3a1.5 1.5 0 0 1 1.5-1.5zM4 4a.5.5 0 0 0-.5.5V6h9V4.5a.5.5 0 0 0-.5-.5H4zM2.5 8A.5.5 0 0 0 2 8.5v5A.5.5 0 0 0 2.5 14h11a.5.5 0 0 0 .5-.5v-5a.5.5 0 0 0-.5-.5h-11z"/>
+</svg>
+`;
+                        saveBtn.title = 'Save to Gallery';
+                        saveBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            addToSavedImages(imgSrc, data.title);
+                        });
+                        card.appendChild(saveBtn);
+
+                        // Title below image
+                        const title = document.createElement('p');
+                        title.textContent = data.title || 'Untitled';
+                        card.appendChild(title);
+
+                        // Overlay with additional details on hover
+                        const overlay = document.createElement('div');
+                        overlay.className = 'overlay';
+                        overlay.innerHTML = `<strong>Title:</strong> ${data.title || 'N/A'}<br>
+                                 <strong>Artist:</strong> ${data.artistDisplayName || 'N/A'}<br>
+                                 <strong>Date:</strong> ${data.objectDate || 'N/A'}<br>
+                                 <strong>Medium:</strong> ${data.medium || 'N/A'}<br>
+                                 <strong>Dimensions:</strong> ${data.dimensions || 'N/A'}`;
+                        card.appendChild(overlay);
+
+                        imagesContainer.appendChild(card);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error fetching object ID ' + id, err);
+                });
+        }
+
+        // Add an image to savedImages (if not already present)
+        function addToSavedImages(src, titleText) {
+            if (!savedImages.some(image => image.src === src)) {
+                savedImages.push({ src, title: titleText });
+                updateSavedImagesStorage();
+            }
+        }
+
+        // Load a batch of images
+        function loadImages(start, count) {
+            loadingIndicator.textContent = "Loading more...";
+            loadMoreBtn.style.display = 'none';
+            let imagesLoaded = 0;
+            for (let id = start; id < start + count; id++) {
+                fetchObject(id).finally(() => {
+                    imagesLoaded++;
+                    if (imagesLoaded === count) {
+                        loadingIndicator.textContent = "";
+                        loadMoreBtn.style.display = 'block';
+                    }
+                });
+            }
+        }
+
+        // Initial load of 500 images
+        loadImages(currentStartId, initialBatch);
+        currentStartId += initialBatch;
+
+        // Load 20 more images on button click
+        loadMoreBtn.addEventListener('click', () => {
+            loadImages(currentStartId, loadMoreBatch);
+            currentStartId += loadMoreBatch;
+        });
+
+        // Modal functionality to create a mini gallery
+        function openGalleryModal() {
+            modalThemeInput.value = "";
+            modalImagesContainer.innerHTML = "";
+            // Populate modal with thumbnails from savedImages
+            savedImages.forEach((imgData, index) => {
+                const thumb = document.createElement('img');
+                thumb.src = imgData.src;
+                thumb.alt = imgData.title || "";
+                thumb.dataset.index = index;
+                thumb.addEventListener('click', () => {
+                    thumb.classList.toggle('selected');
+                });
+                modalImagesContainer.appendChild(thumb);
+            });
+            galleryModal.style.display = 'flex';
+        }
+
+        function closeGalleryModal() {
+            galleryModal.style.display = 'none';
+        }
+
+        createGalleryBtn.addEventListener('click', openGalleryModal);
+        modalCancelBtn.addEventListener('click', closeGalleryModal);
+
+        modalConfirmBtn.addEventListener('click', () => {
+            const theme = modalThemeInput.value.trim();
+            const selectedThumbs = modalImagesContainer.querySelectorAll('img.selected');
+            if (!theme) {
+                alert("Please enter a gallery theme.");
+                return;
+            }
+            if (selectedThumbs.length === 0) {
+                alert("Please select at least one image from saved images.");
+                return;
+            }
+            // Collect selected images data
+            const selectedImages = [];
+            selectedThumbs.forEach(thumb => {
+                const index = thumb.dataset.index;
+                selectedImages.push(savedImages[index]);
+            });
+            // Create a new gallery object
+            const galleryData = {
+                theme: theme,
+                images: selectedImages
+            };
+            galleries.push(galleryData);
+            updateGalleriesStorage();
+            addMiniGalleryToList(galleryData, galleries.length - 1);
+            closeGalleryModal();
+        });
+
+        // Add a mini gallery to the gallery list (displaying name and first image)
+        function addMiniGalleryToList(galleryData, galleryIndex) {
+            const li = document.createElement('li');
+            const thumb = document.createElement('img');
+            // Use the first image as the thumbnail
+            thumb.src = galleryData.images[0].src;
+            thumb.alt = galleryData.theme;
+            const span = document.createElement('span');
+            span.textContent = galleryData.theme;
+            li.appendChild(thumb);
+            li.appendChild(span);
+
+            // On click, open the gallery view modal
+            li.addEventListener('click', () => {
+                openGalleryViewModal(galleryData);
+            });
+
+            galleryList.appendChild(li);
+        }
+
+        // Populate gallery list from localStorage on page load
+        function loadGalleriesFromStorage() {
+            galleryList.innerHTML = "";
+            galleries.forEach((galleryData, index) => {
+                addMiniGalleryToList(galleryData, index);
+            });
+        }
+
+        // Modal for viewing a gallery's images
+        function openGalleryViewModal(galleryData) {
+            viewGalleryTitle.textContent = galleryData.theme;
+            galleryViewImages.innerHTML = "";
+            galleryData.images.forEach(imgData => {
+                const imgElem = document.createElement('img');
+                imgElem.src = imgData.src;
+                imgElem.alt = imgData.title || "";
+                galleryViewImages.appendChild(imgElem);
+            });
+            galleryViewModal.style.display = 'flex';
+        }
+
+        function closeGalleryViewModal() {
+            galleryViewModal.style.display = 'none';
+        }
+
+        galleryViewClose.addEventListener('click', closeGalleryViewModal);
+
+        window.addEventListener('click', (event) => {
+            if (event.target === galleryModal) {
+                closeGalleryModal();
+            }
+            if (event.target === galleryViewModal) {
+                closeGalleryViewModal();
+            }
+        });
+
+        // On page load, populate galleries list from localStorage
+        loadGalleriesFromStorage();
+    </script>
+</body>
+
+</html>

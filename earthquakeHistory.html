@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Earthquake's History</title>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Single gradient background for the entire page */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom, #d3d3d3, #696969);
+            color: #fff;
+            height: 100vh;
+            background-attachment: fixed;
+        }
+
+        h1 {
+            text-align: center;
+            padding: 20px 0;
+            margin: 0;
+            font-size: 2em;
+        }
+
+        /* Search Form (no white container) */
+        form {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 0 10px;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        /* Align items of the second row at the bottom so that the search button lines up */
+        .row.align-end {
+            align-items: flex-end;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="date"],
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
+        /* Style the search button */
+        button.search-button {
+            background-color: #333;
+            border: 1px solid #fff;
+            border-radius: 5px;
+            color: #fff;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button.search-button:hover {
+            background-color: #555;
+        }
+
+        /* Container for the results and histogram (flex container) */
+        #resultsWrapper {
+            display: flex;
+            max-width: 95%;
+            margin: 20px auto;
+            padding: 0 10px;
+            gap: 20px;
+        }
+
+        /* The table container with extra padding */
+        #results {
+            flex: 2;
+            padding: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+            font-size: 0.9em;
+            background-color: #fff;
+            color: #333;
+        }
+
+        /* Dark grey header row for the table */
+        th {
+            background-color: #333;
+            color: #fff;
+        }
+
+        /* Transparent container for histogram beside the table */
+        #histogramContainer {
+            flex: 1;
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid lightgrey;
+            background: transparent;
+            box-sizing: border-box;
+            height: fit-content;
+            display: none;
+        }
+
+        /* Style for error and loading messages */
+        .message {
+            color: #fff;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Earthquake's History</h1>
+    <form id="searchForm">
+        <!-- First row: Start Date, End Date, Minimum Magnitude, Maximum Magnitude -->
+        <div class="row">
+            <div class="form-group">
+                <label for="startDate">Start Date:</label>
+                <input type="date" id="startDate" name="startDate" placeholder="e.g., 2020-01-01" />
+            </div>
+            <div class="form-group">
+                <label for="endDate">End Date:</label>
+                <input type="date" id="endDate" name="endDate" placeholder="e.g., 2020-01-02" />
+            </div>
+            <div class="form-group">
+                <label for="minMagnitude">Minimum Magnitude:</label>
+                <input type="number" step="0.1" id="minMagnitude" name="minMagnitude" placeholder="e.g., 2.5" />
+            </div>
+            <div class="form-group">
+                <label for="maxMagnitude">Maximum Magnitude:</label>
+                <input type="number" step="0.1" id="maxMagnitude" name="maxMagnitude" placeholder="e.g., 7.0" />
+            </div>
+        </div>
+        <!-- Second row: Minimum Depth, Maximum Depth, Limit, and Search Button -->
+        <div class="row align-end">
+            <div class="form-group">
+                <label for="minDepth">Minimum Depth (km):</label>
+                <input type="number" step="0.1" id="minDepth" name="minDepth" placeholder="e.g., 0" />
+            </div>
+            <div class="form-group">
+                <label for="maxDepth">Maximum Depth (km):</label>
+                <input type="number" step="0.1" id="maxDepth" name="maxDepth" placeholder="e.g., 700" />
+            </div>
+            <div class="form-group">
+                <label for="limit">Limit:</label>
+                <input type="number" id="limit" name="limit" placeholder="50" />
+            </div>
+            <div class="form-group" style="flex: none;">
+                <button type="submit" class="search-button">Search</button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Results wrapper: table on the left and histogram container on the right -->
+    <div id="resultsWrapper">
+        <div id="results">
+            <!-- The earthquake events table will be inserted here -->
+        </div>
+        <div id="histogramContainer">
+            <button id="histogramBtn" class="search-button" style="margin-bottom: 20px;">Generate Histogram</button>
+            <canvas id="histogramChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let earthquakeMagnitudes = [];  // To store magnitudes for histogram
+        let histogramChart = null;       // To hold the Chart.js instance
+
+        document.getElementById("searchForm").addEventListener("submit", function (e) {
+            e.preventDefault();
+            const resultsDiv = document.getElementById("results");
+            resultsDiv.innerHTML = "<p class='message'>Loading...</p>";
+
+            // Retrieve the date values.
+            // If left blank, default to a 30-day window.
+            let startDateInput = document.getElementById("startDate").value;
+            let endDateInput = document.getElementById("endDate").value;
+            let startDate, endDate;
+            if (!startDateInput) {
+                startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+            } else {
+                // Cover the full day for start.
+                startDate = new Date(startDateInput + "T00:00:00").toISOString();
+            }
+            if (!endDateInput) {
+                endDate = new Date().toISOString();
+            } else {
+                // End of the day.
+                endDate = new Date(endDateInput + "T23:59:59").toISOString();
+            }
+
+            // Retrieve other filters.
+            const minMagnitude = document.getElementById("minMagnitude").value;
+            const maxMagnitude = document.getElementById("maxMagnitude").value;
+            const minDepth = document.getElementById("minDepth").value;
+            const maxDepth = document.getElementById("maxDepth").value;
+            // Default limit to 50 if no value provided.
+            let limit = document.getElementById("limit").value;
+            if (!limit) {
+                limit = 50;
+            }
+
+            // Build the API URL.
+            let apiUrl = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson";
+            apiUrl += "&starttime=" + encodeURIComponent(startDate);
+            apiUrl += "&endtime=" + encodeURIComponent(endDate);
+            if (minMagnitude) {
+                apiUrl += "&minmagnitude=" + encodeURIComponent(minMagnitude);
+            }
+            if (maxMagnitude) {
+                apiUrl += "&maxmagnitude=" + encodeURIComponent(maxMagnitude);
+            }
+            if (minDepth) {
+                apiUrl += "&mindepth=" + encodeURIComponent(minDepth);
+            }
+            if (maxDepth) {
+                apiUrl += "&maxdepth=" + encodeURIComponent(maxDepth);
+            }
+            apiUrl += "&limit=" + encodeURIComponent(limit);
+
+            // Fetch data from the USGS API.
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Network response was not ok");
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (!data.features || data.features.length === 0) {
+                        resultsDiv.innerHTML = "<p class='message'>No results found.</p>";
+                        earthquakeMagnitudes = [];
+                        return;
+                    }
+
+                    // Clear previous magnitudes.
+                    earthquakeMagnitudes = [];
+                    // Build the table with detailed information.
+                    let html = "<table>";
+                    html += "<thead><tr>" +
+                        "<th>Time</th>" +
+                        "<th>Magnitude</th>" +
+                        "<th>Mag Type</th>" +
+                        "<th>Depth (km)</th>" +
+                        "<th>Latitude</th>" +
+                        "<th>Longitude</th>" +
+                        "<th>Place</th>" +
+                        "<th>More Info</th>" +
+                        "</tr></thead><tbody>";
+
+                    data.features.forEach(feature => {
+                        const props = feature.properties;
+                        const coords = feature.geometry.coordinates;
+                        // Save magnitude (if available) for histogram.
+                        if (props.mag !== null && !isNaN(props.mag)) {
+                            earthquakeMagnitudes.push(props.mag);
+                        }
+                        const timeString = new Date(props.time).toLocaleString();
+                        html += "<tr>";
+                        html += "<td>" + timeString + "</td>";
+                        html += "<td>" + (props.mag !== null ? props.mag : "N/A") + "</td>";
+                        html += "<td>" + (props.magType ? props.magType : "N/A") + "</td>";
+                        html += "<td>" + (coords[2] !== null ? coords[2] : "N/A") + "</td>";
+                        html += "<td>" + (coords[1] !== null ? coords[1] : "N/A") + "</td>";
+                        html += "<td>" + (coords[0] !== null ? coords[0] : "N/A") + "</td>";
+                        html += "<td>" + (props.place ? props.place : "N/A") + "</td>";
+                        html += "<td><a href='" + props.url + "' target='_blank'>Details</a></td>";
+                        html += "</tr>";
+                    });
+
+                    html += "</tbody></table>";
+                    const histogram = document.getElementById("histogramContainer");
+                    histogram.style.display = "block";
+                    resultsDiv.innerHTML = html;
+                })
+                .catch(error => {
+                    resultsDiv.innerHTML = "<p class='message'>Error: " + error.message + "</p>";
+                    earthquakeMagnitudes = [];
+                });
+        });
+
+        // Function to generate histogram from earthquakeMagnitudes array.
+        document.getElementById("histogramBtn").addEventListener("click", function () {
+            if (earthquakeMagnitudes.length === 0) {
+                alert("No magnitude data available to generate histogram.");
+                return;
+            }
+
+            // Determine the range for magnitude bins.
+            const minMag = Math.floor(Math.min(...earthquakeMagnitudes));
+            const maxMag = Math.ceil(Math.max(...earthquakeMagnitudes));
+            const binWidth = 0.5;
+            const bins = [];
+            const labels = [];
+
+            // Create bins from minMag to maxMag.
+            for (let b = minMag; b < maxMag; b += binWidth) {
+                labels.push(b.toFixed(1) + " - " + (b + binWidth).toFixed(1));
+                bins.push(0);
+            }
+
+            // Count occurrences for each bin.
+            earthquakeMagnitudes.forEach(mag => {
+                let index = Math.floor((mag - minMag) / binWidth);
+                if (index < 0) index = 0;
+                if (index >= bins.length) index = bins.length - 1;
+                bins[index]++;
+            });
+
+            // If a previous chart exists, destroy it.
+            if (histogramChart !== null) {
+                histogramChart.destroy();
+            }
+
+            const ctx = document.getElementById("histogramChart").getContext("2d");
+            histogramChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Number of Earthquakes',
+                        data: bins,
+                        backgroundColor: 'rgba(66, 66, 66, 0.6)',
+                        borderColor: 'rgba(66, 66, 66, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Magnitude Range'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Count'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

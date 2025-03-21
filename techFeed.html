@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tech Feed</title>
+    <style>
+        /* Reset and global styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body.light-theme {
+            background-color: #f9f9f9;
+            color: #333;
+        }
+
+        body.dark-theme {
+            background-color: #333;
+            color: #f9f9f9;
+        }
+
+        /* In dark theme, input fields get a grey background */
+        body.dark-theme input {
+            background-color: #555;
+            color: #f9f9f9;
+            border: 1px solid #777;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        /* Header */
+        header {
+            position: relative;
+            padding: 1rem 0;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2rem;
+        }
+
+        /* Theme toggle switch with sun and moon icons */
+        .theme-switch-wrapper {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Hide the default checkbox */
+        #theme-toggle {
+            display: none;
+        }
+
+        .theme-switch {
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+            background-color: #ccc;
+            border-radius: 13px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .theme-switch .icon {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            pointer-events: none;
+        }
+
+        .theme-switch .sun {
+            left: 5px;
+        }
+
+        .theme-switch .moon {
+            right: 5px;
+        }
+
+        .theme-switch::after {
+            content: "";
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            transition: left 0.3s;
+        }
+
+        #theme-toggle:checked+.theme-switch::after {
+            left: 27px;
+        }
+
+        #theme-toggle:checked+.theme-switch {
+            background-color: #666;
+        }
+
+        /* Layout container */
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 1rem;
+        }
+
+        .main-content {
+            flex: 1 1 70%;
+            padding: 1rem;
+        }
+
+        #saved-articles-panel {
+            flex: 1 1 25%;
+            padding: 1rem;
+            border-left: 2px solid #ccc;
+            max-height: calc(100vh - 80px);
+            overflow-y: auto;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            #saved-articles-panel {
+                border-left: none;
+                border-top: 2px solid #ccc;
+                margin-top: 1rem;
+            }
+        }
+
+        /* Input rows */
+        .input-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .input-row input {
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        /* Tag input and Add Tag button should be adjacent */
+        #tag-input {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        /* Maximum reading time field is narrow */
+        #reading-time-input {
+            width: 120px;
+        }
+
+        /* Active tags container placed above the search button */
+        #active-tags {
+            margin-bottom: 1rem;
+            text-align: left;
+            padding-left: 1rem;
+        }
+
+        .tag-chip {
+            display: inline-block;
+            background-color: #ddd;
+            color: #333;
+            padding: 0.3rem 0.6rem;
+            border-radius: 12px;
+            margin: 0.3rem;
+            font-size: 0.9rem;
+        }
+
+        body.dark-theme .tag-chip {
+            background-color: #555;
+            color: #f9f9f9;
+        }
+
+        .tag-chip .remove-tag {
+            margin-left: 0.5rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Centered search button container */
+        .search-btn-container {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        /* Button styling with a consistent light-to-dark grey gradient */
+        button {
+            background: linear-gradient(to bottom, #b3b3b3, #3f3f3f);
+            color: #fff;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* Articles Grid and Cards */
+        #articles-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .card {
+            background-color: inherit;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            transition: box-shadow 0.3s;
+            margin-bottom: 1rem;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        /* Card header with title and save icon */
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .card h3 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .card p {
+            margin-top: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .reading-time {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+
+        /* Custom Save Icon as an outlined bookmark with an inner triangular cut.
+       The SVG has been adjusted to have a slightly reduced height. */
+        .save-icon-svg {
+            margin-left: 8px;
+            flex-shrink: 0;
+        }
+
+        /* Saved Articles Panel styling */
+        #saved-articles-panel h2 {
+            margin-top: 0;
+            text-align: center;
+            padding-bottom: 1rem;
+        }
+
+        #saved-articles-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        #saved-articles-list li {
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            border-bottom: 1px solid #ccc;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .saved-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .saved-info {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.3rem;
+        }
+
+        .btn-remove {
+            background: linear-gradient(to bottom, #b3b3b3, #3f3f3f);
+            color: #fff;
+            border: none;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s, color 0.3s;
+        }
+    </style>
+</head>
+
+<body class="light-theme">
+    <!-- Header with centered title and theme toggle switch -->
+    <header>
+        <h1>Tech Feed</h1>
+        <div class="theme-switch-wrapper">
+            <input type="checkbox" id="theme-toggle" />
+            <label for="theme-toggle" class="theme-switch">
+                <span class="icon sun">☀</span>
+                <span class="icon moon">🌙</span>
+            </label>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="main-content">
+            <!-- Search Section -->
+            <section id="search-section">
+                <div class="input-row">
+                    <input type="text" id="tag-input" placeholder="Enter tag (e.g., javascript)" />
+                    <button id="add-tag-btn">Add Tag</button>
+                        <input type="number" id="reading-time-input" placeholder="Max time" min="1" />
+                </div>
+                <!-- Active tags displayed above the search button -->
+                <div id="active-tags"></div>
+                <div class="search-btn-container">
+                    <button id="search-btn">Search Articles</button>
+                </div>
+            </section>
+            <!-- Articles will be displayed here in card format (initially empty) -->
+            <section id="articles-container"></section>
+        </div>
+        <aside id="saved-articles-panel">
+            <h2>Saved Articles</h2>
+            <ul id="saved-articles-list">
+                <!-- Saved articles will be populated here -->
+            </ul>
+        </aside>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Theme toggle functionality
+            const themeToggle = document.getElementById('theme-toggle');
+            themeToggle.addEventListener('change', () => {
+                if (themeToggle.checked) {
+                    document.body.classList.remove('light-theme');
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                    document.body.classList.add('light-theme');
+                }
+            });
+
+            // Multiple Tag Search Functionality
+            let activeTags = [];
+            const tagInput = document.getElementById('tag-input');
+            const addTagBtn = document.getElementById('add-tag-btn');
+            const activeTagsContainer = document.getElementById('active-tags');
+            const readingTimeInput = document.getElementById('reading-time-input');
+            const articlesContainer = document.getElementById('articles-container');
+            const searchBtn = document.getElementById('search-btn');
+
+            function updateActiveTagsUI() {
+                activeTagsContainer.innerHTML = '';
+                activeTags.forEach(tag => {
+                    const chip = document.createElement('span');
+                    chip.className = 'tag-chip';
+                    chip.textContent = tag;
+                    const removeSpan = document.createElement('span');
+                    removeSpan.className = 'remove-tag';
+                    removeSpan.textContent = ' ×';
+                    removeSpan.addEventListener('click', () => {
+                        activeTags = activeTags.filter(t => t !== tag);
+                        updateActiveTagsUI();
+                    });
+                    chip.appendChild(removeSpan);
+                    activeTagsContainer.appendChild(chip);
+                });
+            }
+
+            addTagBtn.addEventListener('click', () => {
+                const tag = tagInput.value.trim();
+                if (tag && !activeTags.includes(tag)) {
+                    activeTags.push(tag);
+                    updateActiveTagsUI();
+                }
+                tagInput.value = '';
+            });
+
+            tagInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addTagBtn.click();
+                }
+            });
+
+            // The search button triggers the article search.
+            searchBtn.addEventListener('click', () => {
+                searchArticles();
+            });
+
+            function searchArticles() {
+                if (activeTags.length === 0) {
+                    articlesContainer.innerHTML = '<p>Please add one or more tags to search for articles.</p>';
+                    return;
+                }
+                articlesContainer.innerHTML = '<p>Loading articles...</p>';
+
+                // Fetch articles for each tag in parallel
+                const fetches = activeTags.map(tag =>
+                    fetch(`https://dev.to/api/articles?tag=${encodeURIComponent(tag)}`)
+                        .then(response => response.json())
+                        .catch(error => {
+                            console.error(`Error fetching articles for tag "${tag}":`, error);
+                            return [];
+                        })
+                );
+
+                Promise.all(fetches)
+                    .then(results => {
+                        let combined = [];
+                        results.forEach(articles => {
+                            if (Array.isArray(articles)) {
+                                combined = combined.concat(articles);
+                            }
+                        });
+                        // Deduplicate articles by their ID
+                        const articlesMap = new Map();
+                        combined.forEach(article => {
+                            if (!articlesMap.has(article.id)) {
+                                articlesMap.set(article.id, article);
+                            }
+                        });
+                        let finalArticles = Array.from(articlesMap.values());
+
+                        // Apply reading time filter if provided
+                        const maxReadingTime = parseInt(readingTimeInput.value);
+                        if (!isNaN(maxReadingTime)) {
+                            finalArticles = finalArticles.filter(article => article.reading_time_minutes <= maxReadingTime);
+                        }
+
+                        if (finalArticles.length === 0) {
+                            articlesContainer.innerHTML = '<p>No articles match the search criteria.</p>';
+                            return;
+                        }
+
+                        // Display article cards
+                        articlesContainer.innerHTML = '';
+                        finalArticles.forEach(article => {
+                            const card = document.createElement('div');
+                            card.className = 'card';
+
+                            // If cover image exists, add image
+                            if (article.cover_image) {
+                                const img = document.createElement('img');
+                                img.src = article.cover_image;
+                                img.alt = article.title;
+                                card.appendChild(img);
+                            }
+
+                            // Create card header with title and custom save icon (SVG bookmark outline)
+                            const header = document.createElement('div');
+                            header.className = 'card-header';
+
+                            const titleLink = document.createElement('a');
+                            titleLink.href = article.url;
+                            titleLink.target = '_blank';
+                            const title = document.createElement('h3');
+                            title.textContent = article.title;
+                            titleLink.appendChild(title);
+                            header.appendChild(titleLink);
+
+                            // Create inline SVG for save icon with an inner triangular cut and reduced height
+                            const svgNS = "http://www.w3.org/2000/svg";
+                            const saveIcon = document.createElementNS(svgNS, "svg");
+                            saveIcon.setAttribute("viewBox", "0 0 24 36");
+                            saveIcon.setAttribute("width", "24");
+                            saveIcon.setAttribute("height", "30");
+                            saveIcon.classList.add("save-icon-svg");
+                            saveIcon.title = "Save for Later";
+
+                            const path = document.createElementNS(svgNS, "path");
+                            /* This path draws a rectangle with an inward notch at the bottom:
+                               Move to (2,2), line to (22,2), line to (22,34), line to (12,30), line to (2,34) and close.
+                               The notch is on the inner side. */
+                            path.setAttribute("d", "M2 2 H22 V34 L12 30 L2 34 Z");
+                            path.setAttribute("fill", "none");
+                            path.setAttribute("stroke", "currentColor");
+                            path.setAttribute("stroke-width", "2");
+                            saveIcon.appendChild(path);
+
+                            saveIcon.addEventListener('click', () => {
+                                saveArticle(article);
+                            });
+                            header.appendChild(saveIcon);
+
+                            card.appendChild(header);
+
+                            // Article description (if available)
+                            if (article.description) {
+                                const desc = document.createElement('p');
+                                desc.textContent = article.description;
+                                card.appendChild(desc);
+                            }
+
+                            // Reading time information
+                            const readingTime = document.createElement('p');
+                            readingTime.className = 'reading-time';
+                            readingTime.textContent = article.reading_time_minutes + ' min read';
+                            card.appendChild(readingTime);
+
+                            articlesContainer.appendChild(card);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching articles:', error);
+                        articlesContainer.innerHTML = '<p>Error fetching articles. Please try again later.</p>';
+                    });
+            }
+
+            // Saved Articles Functionality
+            const savedArticlesList = document.getElementById('saved-articles-list');
+
+            function loadSavedArticles() {
+                const saved = localStorage.getItem('savedArticles');
+                try {
+                    return saved ? JSON.parse(saved) : [];
+                } catch (e) {
+                    console.error('Error parsing saved articles:', e);
+                    return [];
+                }
+            }
+
+            function saveArticlesToStorage(articles) {
+                localStorage.setItem('savedArticles', JSON.stringify(articles));
+            }
+
+            function updateSavedArticlesUI() {
+                const savedArticles = loadSavedArticles();
+                savedArticlesList.innerHTML = '';
+                if (savedArticles.length === 0) {
+                    savedArticlesList.innerHTML = '<li>No saved articles.</li>';
+                    return;
+                }
+                savedArticles.forEach(article => {
+                    const li = document.createElement('li');
+                    const headerDiv = document.createElement('div');
+                    headerDiv.className = 'saved-header';
+
+                    const link = document.createElement('a');
+                    link.href = article.url;
+                    link.target = '_blank';
+                    link.textContent = article.title;
+                    headerDiv.appendChild(link);
+
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'btn-remove';
+                    removeBtn.textContent = 'Remove';
+                    removeBtn.addEventListener('click', () => {
+                        removeSavedArticle(article.id);
+                    });
+                    headerDiv.appendChild(removeBtn);
+
+                    li.appendChild(headerDiv);
+
+                    // Additional detail: reading time info
+                    const detailSpan = document.createElement('span');
+                    detailSpan.className = 'saved-info';
+                    detailSpan.textContent = `Reading Time: ${article.reading_time_minutes ? article.reading_time_minutes + ' min' : 'N/A'}`;
+                    li.appendChild(detailSpan);
+
+                    savedArticlesList.appendChild(li);
+                });
+            }
+
+            function saveArticle(article) {
+                const savedArticles = loadSavedArticles();
+                if (savedArticles.some(a => a.id === article.id)) {
+                    alert('Article already saved.');
+                    return;
+                }
+                // Save essential data with additional detail (reading time)
+                const articleToSave = {
+                    id: article.id,
+                    title: article.title,
+                    url: article.url,
+                    reading_time_minutes: article.reading_time_minutes
+                };
+                savedArticles.push(articleToSave);
+                saveArticlesToStorage(savedArticles);
+                updateSavedArticlesUI();
+                alert('Article saved for later.');
+            }
+
+            function removeSavedArticle(articleId) {
+                let savedArticles = loadSavedArticles();
+                savedArticles = savedArticles.filter(a => a.id !== articleId);
+                saveArticlesToStorage(savedArticles);
+                updateSavedArticlesUI();
+            }
+
+            // Initialize saved articles UI on page load
+            updateSavedArticlesUI();
+        });
+    </script>
+</body>
+
+</html>

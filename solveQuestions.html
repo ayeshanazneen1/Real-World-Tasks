@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Solve the questions</title>
+    <!-- Import Moon Dance font from Google Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Moon+Dance&display=swap">
+    <style>
+        /* Body with a single gradient background from light grey to dark grey */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            /* A single gradient from top (#d3d3d3) to bottom (#a9a9a9) */
+            background: linear-gradient(to bottom, #d3d3d3, #a9a9a9);
+            background-attachment: fixed;
+            height:100vh;
+        }
+
+        /* Header with no background */
+        header {
+            text-align: center;
+            padding: 1rem;
+            background: none;
+        }
+
+        /* Title styled with Moon Dance font and dark grey color */
+        header h1 {
+            font-family: 'Moon Dance', cursive;
+            color: #333;
+            font-size: 3rem;
+            margin: 0;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        h2 {
+            margin-top: 0;
+            text-align: center;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .controls label {
+            margin-right: 0.5rem;
+            font-weight: bold;
+        }
+
+        .controls select {
+            padding: 0.25rem;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+        }
+
+        /* Unified gradient button styling for generate, submit, and save */
+        .gradient-button {
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 20px;
+            /* Gradient from #888 to #ccc for background, black text for contrast */
+            background: linear-gradient(to right, #888, #ccc);
+            color: #000;
+            transition: background 0.2s ease;
+        }
+
+        .gradient-button:hover {
+            background: linear-gradient(to right, #777, #bbb);
+        }
+
+        /* Layout containers for quiz and saved scores */
+        .main-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        /* Quiz container and saved scores container with opacity */
+        .quiz-container,
+        .saved-scores-container {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+        }
+
+        /* Make quiz container wider than saved scores container */
+        .quiz-container {
+            flex: 2;
+            min-width: 400px;
+        }
+
+        .saved-scores-container {
+            flex: 1;
+            width: 300px;
+            min-width: 280px;
+            height: fit-content;
+        }
+
+        #timer {
+            font-size: 1.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            font-weight: bold;
+            color: #d9534f;
+        }
+
+        .question-container {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .question-container p {
+            margin: 0 0 0.5rem;
+            font-weight: bold;
+        }
+
+        .answer-option {
+            margin-left: 1rem;
+        }
+
+        /* Initially hidden, shown dynamically */
+        #submitBtn,
+        #saveBtn {
+            margin-top: 1rem;
+            display: none;
+        }
+
+        #no-questions-message {
+            text-align: center;
+            color: #d9534f;
+            font-weight: bold;
+            margin-top: 1rem;
+        }
+
+        #scoreMessage {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #5cb85c;
+            margin-top: 1rem;
+        }
+
+        #savedScoresList {
+            list-style: none;
+            padding-left: 0;
+            margin-top: 1rem;
+        }
+
+        #savedScoresList li {
+            background: #f8f8f8;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem 0.75rem 0.5rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            position: relative;
+        }
+
+        /* Delete icon in top right corner of saved score */
+        .delete-icon {
+            position: absolute;
+            top: 4px;
+            right: 8px;
+            cursor: pointer;
+            color: #d9534f;
+            font-weight: bold;
+        }
+
+        .error-message {
+            color: red;
+            font-weight: bold;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Solve the questions</h1>
+    </header>
+    <main>
+        <!-- Controls for generating quiz -->
+        <div class="controls">
+            <div>
+                <label for="category">Category:</label>
+                <select id="category">
+                    <option value="9">General Knowledge</option>
+                    <option value="10">Entertainment: Books</option>
+                    <option value="11">Entertainment: Film</option>
+                    <option value="12">Entertainment: Music</option>
+                    <option value="13">Entertainment: Musicals & Theatres</option>
+                    <option value="14">Entertainment: Television</option>
+                    <option value="15">Entertainment: Video Games</option>
+                    <option value="16">Entertainment: Board Games</option>
+                    <option value="17">Science & Nature</option>
+                    <option value="18">Science: Computers</option>
+                    <option value="19">Science: Mathematics</option>
+                    <option value="20">Mythology</option>
+                    <option value="21">Sports</option>
+                    <option value="22">Geography</option>
+                    <option value="23">History</option>
+                    <option value="24">Politics</option>
+                    <option value="25">Art</option>
+                    <option value="26">Celebrities</option>
+                    <option value="27">Animals</option>
+                    <option value="28">Vehicles</option>
+                    <option value="29">Entertainment: Comics</option>
+                    <option value="30">Science: Gadgets</option>
+                    <option value="31">Entertainment: Japanese Anime & Manga</option>
+                    <option value="32">Entertainment: Cartoon & Animations</option>
+                </select>
+            </div>
+            <div>
+                <label for="difficulty">Difficulty:</label>
+                <select id="difficulty">
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+            </div>
+            <div>
+                <label for="type">Type:</label>
+                <select id="type">
+                    <option value="multiple">Multiple Choice</option>
+                    <option value="boolean">True / False</option>
+                </select>
+            </div>
+            <div>
+                <!-- Generate Quiz button with gradient-button class -->
+                <button id="generateBtn" class="gradient-button">Generate Quiz</button>
+            </div>
+        </div>
+
+        <div class="main-container">
+            <!-- Left side: Quiz content -->
+            <div class="quiz-container">
+                <div id="timer"></div>
+                <div id="quiz"></div>
+                <!-- Submit button with same gradient styling -->
+                <button id="submitBtn" class="gradient-button">Submit Answers</button>
+                <div id="scoreMessage"></div>
+                <!-- Save button with same gradient styling -->
+                <button id="saveBtn" class="gradient-button">Save Score</button>
+                <div id="no-questions-message"></div>
+            </div>
+
+            <!-- Right side: Saved scores -->
+            <div class="saved-scores-container">
+                <h2>Saved Scores</h2>
+                <ul id="savedScoresList"></ul>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const generateBtn = document.getElementById('generateBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const quizContainer = document.getElementById('quiz');
+        const timerDisplay = document.getElementById('timer');
+        const noQuestionsMessage = document.getElementById('no-questions-message');
+        const scoreMessage = document.getElementById('scoreMessage');
+        const savedScoresList = document.getElementById('savedScoresList');
+
+        let countdownInterval;
+        let currentQuizData = []; // Store quiz data for submission
+        let userScore = 0;        // Store the user's final score
+        let quizOptions = {};     // Store the category, difficulty, and type for saving
+        let isTimeUp = false;     // Track if the quiz time has ended
+
+        // Shuffle array helper function
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function startCountdown(seconds) {
+            clearInterval(countdownInterval);
+            isTimeUp = false; // reset timeUp flag
+            let timeLeft = seconds;
+            timerDisplay.textContent = `Time Left: ${timeLeft}s`;
+
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    timerDisplay.textContent = "Time's up!";
+                    isTimeUp = true;
+                    // Hide the submit button and show message
+                    submitBtn.style.display = 'none';
+                    scoreMessage.style.color = '#d9534f';
+                    scoreMessage.textContent = 'Try again harder!';
+                } else {
+                    timerDisplay.textContent = `Time Left: ${timeLeft}s`;
+                }
+            }, 1000);
+        }
+
+        function generateQuiz() {
+            // Clear previous quiz, timer, messages, and data
+            quizContainer.innerHTML = '';
+            timerDisplay.textContent = '';
+            noQuestionsMessage.textContent = '';
+            scoreMessage.textContent = '';
+            scoreMessage.style.color = '#5cb85c'; // reset color for next quiz
+            submitBtn.style.display = 'none';
+            saveBtn.style.display = 'none';
+            currentQuizData = [];
+            userScore = 0;
+            clearInterval(countdownInterval);
+
+            // Get user selections
+            const category = document.getElementById('category').value;
+            const difficulty = document.getElementById('difficulty').value;
+            const type = document.getElementById('type').value;
+            quizOptions = { category, difficulty, type }; // store them for later saving
+
+            // Construct API URL
+            const apiUrl = `https://opentdb.com/api.php?amount=10&category=${category}&difficulty=${difficulty}&type=${type}`;
+
+            // Fetch data from API
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    // If no questions available or response code indicates no results
+                    if (data.response_code !== 0 || !data.results || data.results.length === 0) {
+                        noQuestionsMessage.textContent =
+                            'No questions available for the selected options. Please try selecting other options.';
+                        return; // Do not start timer or display quiz
+                    }
+
+                    const results = data.results;
+                    currentQuizData = results;
+
+                    // Build the quiz
+                    results.forEach((questionObj, index) => {
+                        const questionDiv = document.createElement('div');
+                        questionDiv.classList.add('question-container');
+
+                        const questionP = document.createElement('p');
+                        questionP.innerHTML = `Q${index + 1}: ${questionObj.question}`;
+                        questionDiv.appendChild(questionP);
+
+                        // Combine correct and incorrect answers
+                        let allAnswers = [...questionObj.incorrect_answers, questionObj.correct_answer];
+                        shuffle(allAnswers);
+
+                        // Display each answer as a radio button
+                        allAnswers.forEach(answer => {
+                            const answerId = `q${index}-ans-${Math.random().toString(16).slice(2)}`;
+
+                            const answerContainer = document.createElement('div');
+                            answerContainer.classList.add('answer-option');
+
+                            const answerRadio = document.createElement('input');
+                            answerRadio.type = 'radio';
+                            answerRadio.name = `question${index}`;
+                            answerRadio.value = answer;
+                            answerRadio.id = answerId;
+
+                            const answerLabel = document.createElement('label');
+                            answerLabel.setAttribute('for', answerId);
+                            answerLabel.innerHTML = answer;
+
+                            answerContainer.appendChild(answerRadio);
+                            answerContainer.appendChild(answerLabel);
+
+                            questionDiv.appendChild(answerContainer);
+                        });
+
+                        quizContainer.appendChild(questionDiv);
+                    });
+
+                    // Start the countdown timer once questions are displayed
+                    startCountdown(60);
+
+                    // Show the submit button
+                    submitBtn.style.display = 'inline-block';
+                })
+                .catch(error => {
+                    console.error('Error fetching quiz data:', error);
+                    noQuestionsMessage.textContent = 'An error occurred while fetching the quiz. Please try again.';
+                });
+        }
+
+        function submitQuiz() {
+            // If time is up, do nothing
+            if (isTimeUp) return;
+
+            if (!currentQuizData || currentQuizData.length === 0) {
+                return; // No quiz data to submit
+            }
+
+            // Remove previous error messages
+            const questionDivs = document.querySelectorAll('.question-container');
+            questionDivs.forEach(div => {
+                const oldError = div.querySelector('.error-message');
+                if (oldError) {
+                    div.removeChild(oldError);
+                }
+            });
+
+            // Check if all questions are answered
+            let allAnswered = true;
+            currentQuizData.forEach((questionObj, index) => {
+                const selectedAnswer = document.querySelector(`input[name="question${index}"]:checked`);
+                if (!selectedAnswer) {
+                    // Show error message on that question
+                    const errorMessage = document.createElement('p');
+                    errorMessage.classList.add('error-message');
+                    errorMessage.textContent = 'Please select an answer.';
+                    questionDivs[index].appendChild(errorMessage);
+                    allAnswered = false;
+                }
+            });
+
+            // If any question is unanswered, do not proceed
+            if (!allAnswered) {
+                return;
+            }
+
+            // If all answered, proceed with scoring
+            userScore = 0;
+            currentQuizData.forEach((questionObj, index) => {
+                const selectedAnswer = document.querySelector(`input[name="question${index}"]:checked`);
+                if (selectedAnswer && selectedAnswer.value === questionObj.correct_answer) {
+                    userScore++;
+                } else {
+                    // Show correct answer if user is wrong
+                    const correctAnswerDisplay = document.createElement('p');
+                    correctAnswerDisplay.style.color = '#d9534f';
+                    correctAnswerDisplay.style.fontWeight = 'bold';
+                    correctAnswerDisplay.innerText = `Correct Answer: ${questionObj.correct_answer}`;
+                    questionDivs[index].appendChild(correctAnswerDisplay);
+                }
+            });
+
+            scoreMessage.style.color = '#5cb85c';
+            scoreMessage.textContent = `Your score is ${userScore} out of ${currentQuizData.length}.`;
+
+            // Show the "Save Score" button
+            saveBtn.style.display = 'inline-block';
+        }
+
+        function loadSavedScores() {
+            const savedScores = JSON.parse(localStorage.getItem('quizScores')) || [];
+            return savedScores;
+        }
+
+        function displaySavedScores() {
+            const savedScores = loadSavedScores();
+            savedScoresList.innerHTML = '';
+
+            if (savedScores.length === 0) {
+                // Show a message if no scores are saved
+                const noScoresMsg = document.createElement('li');
+                noScoresMsg.textContent = 'No scores saved yet.';
+                noScoresMsg.style.listStyle = 'none';
+                noScoresMsg.style.background = 'none';
+                noScoresMsg.style.padding = '0';
+                savedScoresList.appendChild(noScoresMsg);
+                return;
+            }
+
+            savedScores.forEach(scoreItem => {
+                const li = document.createElement('li');
+                li.textContent = `Date: ${scoreItem.date} | Category: ${scoreItem.category} | Difficulty: ${scoreItem.difficulty} | Type: ${scoreItem.type} | Score: ${scoreItem.score}/10`;
+
+                // Create a delete icon in the top right
+                const deleteIcon = document.createElement('span');
+                deleteIcon.classList.add('delete-icon');
+                deleteIcon.textContent = '×';
+                deleteIcon.dataset.id = scoreItem.id;
+                deleteIcon.addEventListener('click', removeScore);
+
+                li.appendChild(deleteIcon);
+                savedScoresList.appendChild(li);
+            });
+        }
+
+        function removeScore(e) {
+            const scoreId = e.target.dataset.id;
+            let savedScores = loadSavedScores();
+            // Filter out the score with matching ID
+            savedScores = savedScores.filter(score => score.id.toString() !== scoreId.toString());
+            localStorage.setItem('quizScores', JSON.stringify(savedScores));
+            displaySavedScores();
+        }
+
+        function saveScore() {
+            // Only save if a quiz was submitted
+            if (!currentQuizData || currentQuizData.length === 0) return;
+
+            let savedScores = loadSavedScores();
+
+            // Create a new score object with unique ID
+            const newScore = {
+                id: Date.now(),
+                category: quizOptions.category,
+                difficulty: quizOptions.difficulty,
+                type: quizOptions.type,
+                score: userScore,
+                date: new Date().toLocaleString()
+            };
+
+            // Push and save to localStorage
+            savedScores.push(newScore);
+            localStorage.setItem('quizScores', JSON.stringify(savedScores));
+
+            // Refresh the display
+            displaySavedScores();
+        }
+
+        // Event Listeners
+        generateBtn.addEventListener('click', generateQuiz);
+        submitBtn.addEventListener('click', submitQuiz);
+        saveBtn.addEventListener('click', saveScore);
+
+        // On page load, display any previously saved scores
+        window.addEventListener('load', displaySavedScores);
+    </script>
+</body>
+
+</html>

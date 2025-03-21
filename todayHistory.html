@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Today in History</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f2f2;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            margin: 0;
+            padding: 10px 0;
+            color: #444;
+        }
+
+        form {
+            background: #fff;
+            padding: 20px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .form-row>div {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        label {
+            font-weight: bold;
+            color: #444;
+        }
+
+        select,
+        input[type="number"] {
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        button {
+            background-color: #444;
+            border: none;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #333;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .left-column {
+            flex: 2;
+        }
+
+        .right-column {
+            flex: 1;
+        }
+
+        .events-section {
+            background: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .events-section h2 {
+            border-bottom: 2px solid #444;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+            color: #444;
+        }
+
+        .bookmarks-section {
+            background: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .bookmarks-section h2 {
+            border-bottom: 2px solid #444;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+            color: #444;
+        }
+
+        .event-card {
+            background: #fff;
+            padding: 15px 15px 15px 45px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .event-info {
+            margin-bottom: 10px;
+        }
+
+        .event-year {
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .category {
+            font-style: italic;
+            color: #666;
+            margin-right: 8px;
+        }
+
+        .event-pages {
+            margin-top: 8px;
+            font-size: 0.9rem;
+            color: #444;
+        }
+
+        .event-pages a {
+            color: #444;
+            text-decoration: none;
+            margin-right: 5px;
+        }
+
+        .event-pages a:hover {
+            text-decoration: underline;
+        }
+
+        .bookmark-icon {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            cursor: pointer;
+            font-size: 1.8rem;
+            color: #ccc;
+            user-select: none;
+        }
+
+        .bookmark-icon.bookmarked {
+            color: gold;
+        }
+
+        @media (max-width: 800px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .right-column {
+                max-height: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Today in History</h1>
+        </header>
+        <form id="fetchForm">
+            <div class="form-row">
+                <div>
+                    <label for="language">Language:</label>
+                    <select id="language">
+                        <option value="en">English</option>
+                        <option value="de">German</option>
+                        <option value="fr">French</option>
+                        <option value="sv">Swedish</option>
+                        <option value="pt">Portuguese</option>
+                        <option value="es">Spanish</option>
+                        <option value="ar">Arabic</option>
+                        <option value="bs">Bosnian</option>
+                        <option value="uk">Ukrainian</option>
+                        <option value="it">Italian</option>
+                        <option value="tr">Turkish</option>
+                        <option value="zh">Chinese</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="type">Type:</label>
+                    <select id="type">
+                        <option value="all" selected>All</option>
+                        <option value="selected">Selected</option>
+                        <option value="events">Events</option>
+                        <option value="births">Births</option>
+                        <option value="deaths">Deaths</option>
+                        <option value="holidays">Holidays</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="month">Month:</label>
+                    <select id="month">
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3" selected>March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="day">Day:</label>
+                    <select id="day">
+                        <!-- Options populated by JavaScript -->
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div>
+                    <label for="sort">Sort By:</label>
+                    <select id="sort">
+                        <option value="chronological" selected>Chronological (by year)</option>
+                        <option value="alphabetical">Alphabetical (by text)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="startYear">Start Year:</label>
+                    <input type="number" id="startYear" placeholder="e.g. 1900">
+                </div>
+                <div>
+                    <label for="endYear">End Year:</label>
+                    <input type="number" id="endYear" placeholder="e.g. 2000">
+                </div>
+                <div>
+                    <button type="submit">Fetch Events</button>
+                </div>
+            </div>
+        </form>
+        <div class="main-content">
+            <div class="left-column">
+                <div class="events-section">
+                    <h2>Events</h2>
+                    <div id="events-container">
+                        <p>Use the form above to fetch historical events.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="right-column">
+                <div class="bookmarks-section">
+                    <h2>Bookmarked Events</h2>
+                    <div id="bookmarks-container">
+                        <p>No bookmarked events.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Populate the day select (1-31)
+        (function populateDays() {
+            const daySelect = document.getElementById('day');
+            daySelect.innerHTML = '';
+            for (let d = 1; d <= 31; d++) {
+                const option = document.createElement('option');
+                option.value = d;
+                option.textContent = d;
+                daySelect.appendChild(option);
+            }
+        })();
+
+        // Bookmark helper functions using localStorage
+        function getBookmarks() {
+            const bookmarks = localStorage.getItem('bookmarkedEvents');
+            return bookmarks ? JSON.parse(bookmarks) : [];
+        }
+
+        function saveBookmarks(bookmarks) {
+            localStorage.setItem('bookmarkedEvents', JSON.stringify(bookmarks));
+        }
+
+        function isBookmarked(eventData) {
+            const bookmarks = getBookmarks();
+            return bookmarks.some(b =>
+                b.year === eventData.year && b.text === eventData.text && b.category === eventData.category
+            );
+        }
+
+        function bookmarkEvent(eventData) {
+            let bookmarks = getBookmarks();
+            if (!isBookmarked(eventData)) {
+                bookmarks.push(eventData);
+                saveBookmarks(bookmarks);
+            }
+            renderBookmarks();
+        }
+
+        function removeBookmark(eventData) {
+            let bookmarks = getBookmarks();
+            bookmarks = bookmarks.filter(b =>
+                !(b.year === eventData.year && b.text === eventData.text && b.category === eventData.category)
+            );
+            saveBookmarks(bookmarks);
+            renderBookmarks();
+        }
+
+        function renderBookmarks() {
+            const container = document.getElementById('bookmarks-container');
+            const bookmarks = getBookmarks();
+            container.innerHTML = '';
+            if (bookmarks.length === 0) {
+                container.innerHTML = '<p>No bookmarked events.</p>';
+                return;
+            }
+            bookmarks.forEach((event) => {
+                const card = document.createElement('div');
+                card.className = 'event-card';
+                // Store event data on the card for later reference.
+                card.dataset.event = JSON.stringify(event);
+
+                // Filled star icon for removal in the bookmarks section
+                const starIcon = document.createElement('span');
+                starIcon.className = 'bookmark-icon bookmarked';
+                starIcon.textContent = '★';
+                starIcon.addEventListener('click', () => {
+                    removeBookmark(event);
+                    updateEventListIcons();
+                });
+                card.appendChild(starIcon);
+
+                const info = document.createElement('div');
+                info.className = 'event-info';
+                info.innerHTML =
+                    '<span class="event-year">' + event.year + '</span>' +
+                    (event.category ? '<span class="category">(' + event.category + ')</span>' : '') +
+                    '<span class="event-text">' + event.text + '</span>';
+                card.appendChild(info);
+
+                if (event.pages && Array.isArray(event.pages) && event.pages.length > 0) {
+                    let pagesHTML = '<div class="event-pages"><strong>Related Pages:</strong> ';
+                    event.pages.forEach((page, idx) => {
+                        const title = page.normalizedtitle || page.title || 'Untitled';
+                        const url = (page.content_urls && page.content_urls.desktop && page.content_urls.desktop.page) ? page.content_urls.desktop.page : '#';
+                        pagesHTML += `<a href="${url}" target="_blank">${title}</a>`;
+                        if (idx < event.pages.length - 1) pagesHTML += ', ';
+                    });
+                    pagesHTML += '</div>';
+                    card.insertAdjacentHTML('beforeend', pagesHTML);
+                }
+                container.appendChild(card);
+            });
+        }
+
+        // Update star icons in the events list based on bookmark status
+        function updateEventListIcons() {
+            const eventCards = document.querySelectorAll('#events-container .event-card');
+            eventCards.forEach(card => {
+                const eventData = JSON.parse(card.dataset.event);
+                const icon = card.querySelector('.bookmark-icon');
+                if (isBookmarked(eventData)) {
+                    icon.textContent = '★';
+                    icon.classList.add('bookmarked');
+                } else {
+                    icon.textContent = '☆';
+                    icon.classList.remove('bookmarked');
+                }
+            });
+        }
+
+        function renderEvents(events) {
+            const container = document.getElementById('events-container');
+            container.innerHTML = '';
+            if (events.length === 0) {
+                container.innerHTML = '<p>No events found for this day and criteria.</p>';
+                return;
+            }
+            events.forEach(event => {
+                const card = document.createElement('div');
+                card.className = 'event-card';
+                // Store event data in a data attribute for later use
+                card.dataset.event = JSON.stringify(event);
+
+                // Star icon for toggling bookmark in events list
+                const bookmarkIcon = document.createElement('span');
+                bookmarkIcon.className = 'bookmark-icon';
+                bookmarkIcon.addEventListener('click', () => {
+                    if (isBookmarked(event)) {
+                        removeBookmark(event);
+                        bookmarkIcon.textContent = '☆';
+                        bookmarkIcon.classList.remove('bookmarked');
+                    } else {
+                        bookmarkEvent(event);
+                        bookmarkIcon.textContent = '★';
+                        bookmarkIcon.classList.add('bookmarked');
+                    }
+                    updateEventListIcons();
+                });
+                // Set initial icon state
+                if (isBookmarked(event)) {
+                    bookmarkIcon.textContent = '★';
+                    bookmarkIcon.classList.add('bookmarked');
+                } else {
+                    bookmarkIcon.textContent = '☆';
+                }
+                card.appendChild(bookmarkIcon);
+
+                const info = document.createElement('div');
+                info.className = 'event-info';
+                info.innerHTML =
+                    '<span class="event-year">' + event.year + '</span>' +
+                    (event.category ? '<span class="category">(' + event.category + ')</span>' : '') +
+                    '<span class="event-text">' + event.text + '</span>';
+                card.appendChild(info);
+
+                if (event.pages && Array.isArray(event.pages) && event.pages.length > 0) {
+                    let pagesHTML = '<div class="event-pages"><strong>Related Pages:</strong> ';
+                    event.pages.forEach((page, idx) => {
+                        const title = page.normalizedtitle || page.title || 'Untitled';
+                        const url = (page.content_urls && page.content_urls.desktop && page.content_urls.desktop.page) ? page.content_urls.desktop.page : '#';
+                        pagesHTML += `<a href="${url}" target="_blank">${title}</a>`;
+                        if (idx < event.pages.length - 1) pagesHTML += ', ';
+                    });
+                    pagesHTML += '</div>';
+                    card.insertAdjacentHTML('beforeend', pagesHTML);
+                }
+                container.appendChild(card);
+            });
+        }
+
+        // Sorting function: sorts events by year (chronological) or by text (alphabetical)
+        function sortEvents(events, sortBy) {
+            if (sortBy === 'chronological') {
+                events.sort((a, b) => Number(a.year) - Number(b.year));
+            } else if (sortBy === 'alphabetical') {
+                events.sort((a, b) => {
+                    const textA = a.text.toUpperCase();
+                    const textB = b.text.toUpperCase();
+                    if (textA < textB) return -1;
+                    if (textA > textB) return 1;
+                    return 0;
+                });
+            }
+            return events;
+        }
+
+        document.getElementById('fetchForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const language = document.getElementById('language').value;
+            const type = document.getElementById('type').value;
+            const month = document.getElementById('month').value;
+            const day = document.getElementById('day').value;
+            const sortBy = document.getElementById('sort').value;
+            const startYearVal = document.getElementById('startYear').value;
+            const endYearVal = document.getElementById('endYear').value;
+
+            const eventsContainer = document.getElementById('events-container');
+            eventsContainer.innerHTML = '<p>Loading historical events...</p>';
+
+            const monthStr = month.toString().padStart(2, '0');
+            const dayStr = day.toString().padStart(2, '0');
+            const url = `https://api.wikimedia.org/feed/v1/wikipedia/${language}/onthisday/${type}/${monthStr}/${dayStr}`;
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Network response was not ok");
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    let events = [];
+                    if (type === 'all') {
+                        // Combine categories if type is "all"
+                        ['events', 'births', 'deaths', 'holidays'].forEach(category => {
+                            if (data[category] && Array.isArray(data[category])) {
+                                data[category].forEach(item => {
+                                    item.category = category;
+                                    events.push(item);
+                                });
+                            }
+                        });
+                    } else {
+                        // For other types, assume data is an array
+                        events = data[type];
+                    }
+
+                    // Filter events by start and end year if specified
+                    if (startYearVal || endYearVal) {
+                        events = events.filter(event => {
+                            const yearNum = Number(event.year);
+                            if (startYearVal && yearNum < Number(startYearVal)) return false;
+                            if (endYearVal && yearNum > Number(endYearVal)) return false;
+                            return true;
+                        });
+                    }
+
+                    sortEvents(events, sortBy);
+                    renderEvents(events);
+                    updateEventListIcons();
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    eventsContainer.innerHTML = '<p>Error fetching events. Please try again later.</p>';
+                });
+        });
+
+        // Render any bookmarks on page load.
+        renderBookmarks();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Book Search</title>
+    <!-- Import Moon Dance font from Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Moon+Dance&display=swap" rel="stylesheet">
+    <style>
+        /* Overall page styling */
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            /* Single light bluish color gradient background */
+            background: linear-gradient(to bottom right, #b3daff, #e6f7ff);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Loading overlay styling */
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.7);
+            display: none;
+            /* Hidden by default */
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 6px solid #ccc;
+            border-top-color: #333;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Header styling: placing the title, search bar, and search button on the same line */
+        header {
+            display: flex;
+            padding: 1rem;
+            flex-wrap: wrap;
+        }
+
+        header h1 {
+            font-family: 'Moon Dance', cursive;
+            color: #ffd700;
+            /* Yellow color */
+            font-size: 3rem;
+            /* Bigger text size */
+            margin: 0;
+            flex: 0 1 auto;
+            text-align: left;
+        }
+
+        .header-search {
+            margin: 1.3rem;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        /* Search bar styling in the header */
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid #7bbcff;
+            border-radius: 16px;
+            /* More rounded edges */
+            padding: 0.5rem;
+            flex: 0 1 auto;
+        }
+
+        .search-icon {
+            color: #fff;
+            /* White search icon */
+            margin-right: 0.5rem;
+            font-size: 1.2rem;
+        }
+
+        #searchInput {
+            width: 200px;
+            border: none;
+            background: transparent;
+            outline: none;
+            color: #333;
+            font-size: 1rem;
+        }
+
+        /* Search button right beside search bar with a little margin */
+        #searchButton {
+            border: 2px solid #7bbcff;
+            border-radius: 16px;
+            background-color: #b3daff;
+            color: #333;
+            font-size: 1rem;
+            cursor: pointer;
+            outline: none;
+            padding: 0.5rem 1rem;
+            margin-left: 10px;
+            /* Little margin */
+            flex: 0 1 auto;
+        }
+
+        #searchButton:hover {
+            background-color: #a2ccf2;
+        }
+
+        /* Main container for results and favorites bar */
+        .main-content {
+            display: none;
+            /* Hide until we have results or favorites */
+            flex: 1;
+            padding: 1rem;
+            box-sizing: border-box;
+            gap: 1rem;
+        }
+
+        /* Results container */
+        .results-container {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .results-wrapper {
+            background: rgba(179, 218, 255, 0.2);
+            border: 2px solid #7bbcff;
+            border-radius: 8px;
+            padding: 1rem;
+            box-sizing: border-box;
+            flex: 1;
+        }
+
+        /* Results list */
+        #resultsList {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #resultsList li {
+            background-color: transparent;
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid transparent;
+        }
+
+        #resultsList li:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            border: 1px solid #ccc;
+        }
+
+        #resultsList li span.favorite {
+            margin-left: 1rem;
+            font-size: 1.2rem;
+            color: gold;
+        }
+
+        /* Favorites bar styling */
+        .favorites-bar {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid #7bbcff;
+            border-radius: 8px;
+            padding: 1rem;
+            box-sizing: border-box;
+            overflow-y: auto;
+            min-width: 200px;
+            max-width: 300px;
+        }
+
+        .favorite-item {
+            background-color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .favorite-item h4 {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .remove-fav {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #ffc107;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+        }
+
+        .remove-fav:hover {
+            background: #e0a800;
+        }
+
+        /* Detail view item */
+        .detail-item {
+            margin: 0.5rem 0;
+            background-color: rgba(255, 255, 255, 0.4);
+            border-radius: 4px;
+            padding: 1rem;
+            list-style: none;
+        }
+
+        .detail-item table.detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1rem;
+        }
+
+        .detail-item table.detail-table th,
+        .detail-item table.detail-table td {
+            border: 1px solid #ccc;
+            padding: 0.5rem;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .detail-item img {
+            display: block;
+            margin: 0.5rem auto;
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Favorite button */
+        .favorite-button {
+            background-color: #ffc107;
+            color: #000;
+            border: none;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 3rem;
+            border-radius: 4px;
+        }
+
+        .favorite-button:hover {
+            background-color: #e0a800;
+        }
+
+        /* Responsive adjustments (optional) */
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .results-container {
+                margin-right: 0;
+                margin-bottom: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loading overlay -->
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <header>
+        <div class="header-title">
+            <h1>find the book</h1>
+        </div>
+        <div class="header-search">
+            <div class="search-bar">
+                <span class="search-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                      <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.242 0a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+                    </svg>
+                  </span>                  
+                <input type="text" id="searchInput" placeholder="Search by title or author..." />
+            </div>
+            <button id="searchButton">Search</button>
+        </div>
+    </header>
+
+    <div class="main-content">
+        <!-- Results section -->
+        <div class="results-container">
+            <div class="results-wrapper">
+                <ul id="resultsList"></ul>
+            </div>
+        </div>
+        <!-- Favorites bar -->
+        <div id="favoritesBar" class="favorites-bar">
+            <!-- Will be populated dynamically -->
+        </div>
+    </div>
+
+    <script>
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+        const resultsList = document.getElementById('resultsList');
+        const favoritesBar = document.getElementById('favoritesBar');
+
+        let searchResults = [];
+
+        /********************************************************************
+         * Local storage management
+         * We store entire doc objects in an array "favoriteDocs".
+         ********************************************************************/
+        function loadFavorites() {
+            const stored = localStorage.getItem('favoriteDocs');
+            if (!stored) return [];
+            try {
+                return JSON.parse(stored);
+            } catch {
+                return [];
+            }
+        }
+
+        function saveFavorites(favDocs) {
+            localStorage.setItem('favoriteDocs', JSON.stringify(favDocs));
+        }
+
+        function getDocIndexByKey(array, key) {
+            return array.findIndex(d => d.key === key);
+        }
+
+        function isFavorite(key) {
+            const favs = loadFavorites();
+            return getDocIndexByKey(favs, key) !== -1;
+        }
+
+        function addFavorite(doc) {
+            const favs = loadFavorites();
+            // If it's not already in favorites, add it
+            if (getDocIndexByKey(favs, doc.key) === -1) {
+                favs.push(doc);
+                saveFavorites(favs);
+            }
+        }
+
+        function removeFavorite(key) {
+            const favs = loadFavorites();
+            const index = getDocIndexByKey(favs, key);
+            if (index !== -1) {
+                favs.splice(index, 1);
+                saveFavorites(favs);
+            }
+        }
+
+        function toggleFavorite(doc) {
+            if (isFavorite(doc.key)) {
+                removeFavorite(doc.key);
+            } else {
+                addFavorite(doc);
+            }
+        }
+
+        /********************************************************************
+         * Update the visibility of the main content container
+         * (Only show if there are search results or any favorites)
+         ********************************************************************/
+        let searched = false;
+
+        function updateMainContentVisibility() {
+            const hasResults = searchResults.length > 0;
+            const hasFavorites = loadFavorites().length > 0;
+            const mainContent = document.querySelector('.main-content');
+            if (hasResults || hasFavorites || searched) {
+                mainContent.style.display = 'flex';
+            } else {
+                mainContent.style.display = 'none';
+            }
+        }
+
+        /********************************************************************
+         * Updating the Favorites bar on the right
+         ********************************************************************/
+        function updateFavoritesBar() {
+            const favDocs = loadFavorites();
+            favoritesBar.innerHTML = '';
+            if (favDocs.length === 0) {
+                const p = document.createElement('p');
+                p.textContent = 'No favorites yet.';
+                favoritesBar.appendChild(p);
+                return;
+            }
+            favDocs.forEach(doc => {
+                const item = document.createElement('div');
+                item.classList.add('favorite-item');
+
+                const title = doc.title || 'Untitled';
+                const authors = doc.author_name ? doc.author_name.join(', ') : 'Unknown Author';
+
+                // Show minimal info
+                const h4 = document.createElement('h4');
+                h4.textContent = title;
+                item.appendChild(h4);
+
+                const p = document.createElement('p');
+                p.textContent = authors;
+                item.appendChild(p);
+
+                // Remove from favorites button
+                const removeBtn = document.createElement('button');
+                removeBtn.classList.add('remove-fav');
+                removeBtn.textContent = 'x';
+                removeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeFavorite(doc.key);
+                    updateFavoritesBar();
+                    displaySearchResults(searchResults);
+                    updateMainContentVisibility();
+                });
+                item.appendChild(removeBtn);
+
+                favoritesBar.appendChild(item);
+            });
+        }
+
+        /********************************************************************
+         * Cover fetching
+         ********************************************************************/
+        // Utility: get cover URL for a doc's book/works OLID
+        function getCoverUrlForDoc(doc) {
+            if (!doc.key) return '';
+            const parts = doc.key.split('/');
+            if (parts.length < 3) return '';
+            const olid = parts[2]; // e.g. "OL12345W" or "OL12345M"
+            if (doc.key.startsWith('/works/')) {
+                return `https://covers.openlibrary.org/w/olid/${olid}-M.jpg`;
+            } else if (doc.key.startsWith('/books/')) {
+                return `https://covers.openlibrary.org/b/olid/${olid}-M.jpg`;
+            }
+            return '';
+        }
+
+        /********************************************************************
+         * Display the search results in the list
+         ********************************************************************/
+        function displaySearchResults(results) {
+            resultsList.innerHTML = '';
+            if (results.length === 0) {
+                // Show "No results found" if no books
+                const li = document.createElement('li');
+                li.textContent = 'No results found.';
+                resultsList.appendChild(li);
+                updateMainContentVisibility();
+                return;
+            }
+
+            results.forEach((doc, index) => {
+                const li = document.createElement('li');
+                const title = doc.title ? doc.title : 'Untitled';
+                const author = doc.author_name ? doc.author_name.join(', ') : 'Unknown Author';
+                li.textContent = `${title} — by ${author}`;
+
+                // If favorite, show a star icon
+                if (doc.key && isFavorite(doc.key)) {
+                    const star = document.createElement('span');
+                    star.classList.add('favorite');
+                    star.textContent = '★';
+                    li.appendChild(star);
+                }
+
+                // Clicking a book replaces the list with a single item detail
+                li.addEventListener('click', () => {
+                    showBookDetails(index);
+                });
+                resultsList.appendChild(li);
+            });
+            updateMainContentVisibility();
+        }
+
+        /********************************************************************
+         * Show details of the selected book in a formatted manner (replacing the list)
+         ********************************************************************/
+        function showBookDetails(index) {
+            const doc = searchResults[index];
+            resultsList.innerHTML = ''; // Clear the list
+
+            const detailItem = document.createElement('li');
+            detailItem.classList.add('detail-item');
+
+            // Build data
+            const title = doc.title || 'Untitled';
+            const authors = doc.author_name ? doc.author_name.join(', ') : 'Unknown';
+            const firstPublishYear = doc.first_publish_year ? doc.first_publish_year : 'N/A';
+            const publishers = doc.publisher ? doc.publisher.join(', ') : 'N/A';
+            const isbns = doc.isbn ? doc.isbn.join(', ') : 'N/A';
+
+            // Book cover
+            const bookCoverUrl = getCoverUrlForDoc(doc);
+            // First author cover
+            let authorCoverUrl = '';
+            if (doc.author_key && doc.author_key.length > 0) {
+                authorCoverUrl = `https://covers.openlibrary.org/a/olid/${doc.author_key[0]}-M.jpg`;
+            }
+
+            // Create table for the details
+            let detailsHtml = `
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Authors</th>
+              <th>First Publish Year</th>
+              <th>Publisher(s)</th>
+              <th>ISBN(s)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>${title}</td>
+              <td>${authors}</td>
+              <td>${firstPublishYear}</td>
+              <td>${publishers}</td>
+              <td>${isbns}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+
+            // Add covers if available
+            if (bookCoverUrl) {
+                detailsHtml += `<img src="${bookCoverUrl}" alt="Book cover">`;
+            }
+            if (authorCoverUrl) {
+                detailsHtml += `<img src="${authorCoverUrl}" alt="Author cover" style="max-height:100px;">`;
+            }
+
+            detailItem.innerHTML = detailsHtml;
+
+            // Create Favorite button
+            const favButton = document.createElement('button');
+            favButton.classList.add('favorite-button');
+            favButton.textContent = isFavorite(doc.key) ? 'Unmark as Favorite' : 'Mark as Favorite';
+            favButton.addEventListener('click', () => {
+                toggleFavorite(doc);
+                favButton.textContent = isFavorite(doc.key) ? 'Unmark as Favorite' : 'Mark as Favorite';
+                updateFavoritesBar();
+            });
+
+            detailItem.appendChild(favButton);
+            resultsList.appendChild(detailItem);
+            updateMainContentVisibility();
+        }
+
+        /********************************************************************
+         * Show/hide loading overlay
+         ********************************************************************/
+        function showLoading() {
+            loadingOverlay.style.display = 'flex';
+        }
+        function hideLoading() {
+            loadingOverlay.style.display = 'none';
+        }
+
+        /********************************************************************
+         * Handle search
+         ********************************************************************/
+        function fetchBooks(query) {
+            showLoading();
+            const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}`;
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    searchResults = data.docs || [];
+                    displaySearchResults(searchResults);
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error fetching books:', error);
+                    hideLoading();
+                });
+        }
+
+        searchButton.addEventListener('click', () => {
+            const query = searchInput.value.trim();
+            if (!query) return;
+            searched = true;
+            fetchBooks(query);
+        });
+
+        // On page load, update the favorites bar and check if we should show main content
+        updateFavoritesBar();
+        updateMainContentVisibility();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Calories Tracker</title>
+    <style>
+        /* Overall page styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            /* Single gradient background from light to dark grey */
+            background: linear-gradient(#f0f0f0, #999999);
+            height: 100vh;
+        }
+
+        /* Title with less top margin */
+        h1 {
+            text-align: center;
+            margin: 10px 0;
+            color: black;
+        }
+
+        /* Main container split into two columns */
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 20px;
+            box-sizing: border-box;
+            justify-content: space-between;
+        }
+
+        /* Left side (weight, activity, duration, add button) */
+        .left-side {
+            flex: 1 1 45%;
+            min-width: 280px;
+            margin-bottom: 20px;
+        }
+
+        /* Right side (daily goal slider, table, total cals, progress bar, goal status) */
+        .right-side {
+            flex: 1 1 45%;
+            min-width: 280px;
+            margin-bottom: 20px;
+        }
+
+        /* Form group spacing */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: inline-block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        /* Inputs and select styling */
+        input[type="number"],
+        select {
+            width: calc(100% - 10px);
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        /* Range (slider) styling */
+        input[type="range"] {
+            width: 100%;
+            margin: 5px 0;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+        }
+
+        .slider-labels span {
+            position: relative;
+            font-size: 12px;
+        }
+
+        /* Button styling */
+        button {
+            background: #007BFF;
+            color: #fff;
+            border: none;
+            padding: 10px 16px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        /* Table styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background: #eee;
+        }
+
+        /* Summary and status styling */
+        #totalCalories,
+        #goalStatus {
+            margin-top: 20px;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* Progress bar styling - smaller, dark grey fill, light grey outline */
+        .progress-bar-container {
+            background-color: #ccc;
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-bar-fill {
+            background-color: #555;
+            height: 100%;
+            width: 0;
+            transition: width 0.3s ease;
+        }
+
+        /* Note styling */
+        .note {
+            text-align: center;
+            margin: 20px;
+            font-size: 14px;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Calories Tracker</h1>
+
+    <div class="container">
+        <!-- Left Side -->
+        <div class="left-side">
+            <div class="form-group">
+                <label for="weight">Weight</label>
+                <input type="number" id="weight" placeholder="Enter your weight in kg" />
+            </div>
+
+            <div class="form-group">
+                <label for="exercise">Activity Type</label>
+                <select id="exercise">
+                    <optgroup label="Walking">
+                        <option value="2.8">Walking (slow pace, ~2 mph)</option>
+                        <option value="3.3">Walking (moderate pace, ~3 mph)</option>
+                        <option value="5.0">Walking (brisk pace, ~4 mph)</option>
+                    </optgroup>
+                    <optgroup label="Running">
+                        <option value="8.3">Running (~5 mph)</option>
+                        <option value="9.8">Running (~6 mph)</option>
+                        <option value="11.0">Running (~7 mph)</option>
+                        <option value="11.8">Running (~8 mph)</option>
+                    </optgroup>
+                    <optgroup label="Bicycling">
+                        <option value="4.0">Bicycling (leisure, &lt;10 mph)</option>
+                        <option value="6.0">Bicycling (light, 10-12 mph)</option>
+                        <option value="8.0">Bicycling (moderate, 12-14 mph)</option>
+                        <option value="10.0">Bicycling (vigorous, 14-16 mph)</option>
+                    </optgroup>
+                    <optgroup label="Jumping Rope">
+                        <option value="8.8">Jumping Rope (slow)</option>
+                        <option value="12.3">Jumping Rope (fast)</option>
+                    </optgroup>
+                    <optgroup label="Weight Lifting">
+                        <option value="3.0">Weight Lifting (light)</option>
+                        <option value="6.0">Weight Lifting (heavy)</option>
+                    </optgroup>
+                    <optgroup label="Hiking">
+                        <option value="6.0">Hiking</option>
+                    </optgroup>
+                    <optgroup label="Sports">
+                        <option value="6.0">Basketball (casual)</option>
+                        <option value="8.0">Basketball (game)</option>
+                        <option value="7.0">Soccer (casual)</option>
+                        <option value="10.0">Soccer (game)</option>
+                        <option value="5.0">Tennis (doubles)</option>
+                        <option value="8.0">Tennis (singles)</option>
+                        <option value="3.0">Volleyball (casual)</option>
+                        <option value="8.0">Volleyball (competitive)</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="duration">Duration</label>
+                <input type="number" id="duration" placeholder="Enter duration in minutes" />
+            </div>
+
+            <button type="button" onclick="addExercise()">Add Activity</button>
+        </div>
+
+        <!-- Right Side -->
+        <div class="right-side">
+            <div class="form-group">
+                <label for="goalSlider">Set your daily calorie burn goal</label>
+                <input type="range" id="goalSlider" min="100" max="900" step="200" value="500"
+                    oninput="updateSlider(this)" />
+                <div class="slider-labels">
+                    <span data-value="100">100</span>
+                    <span data-value="300">300</span>
+                    <span data-value="500" class="selected">500</span>
+                    <span data-value="700">700</span>
+                    <span data-value="900">900</span>
+                </div>
+                <span id="goalValue">500</span>
+            </div>
+
+            <table id="exerciseTable">
+                <thead>
+                    <tr>
+                        <th>Activity</th>
+                        <th>Duration</th>
+                        <th>Calories Burned</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <div id="totalCalories">Total Calories Burned: 0</div>
+
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progressBarFill"></div>
+            </div>
+
+            <div id="goalStatus"></div>
+        </div>
+    </div>
+
+    <p class="note">
+        The calories burned are calculated only based on different activities each day
+        and do not represent total daily energy expenditure.
+    </p>
+
+    <script>
+        let activities = [];
+
+        // On page load, check date and load any saved data
+        window.addEventListener("load", () => {
+            checkDate();
+            loadData();
+
+            // Save weight on changes
+            document.getElementById("weight").addEventListener("change", saveData);
+            // Save daily goal on slider change
+            document.getElementById("goalSlider").addEventListener("change", saveData);
+        });
+
+        // Update the displayed goal value next to the slider
+        function updateGoalValue(value) {
+            document.getElementById("goalValue").textContent = value;
+        }
+
+        // Check if the date in localStorage matches today's date
+        // If not, clear localStorage (new day)
+        function checkDate() {
+            const today = new Date().toDateString();
+            const savedDate = localStorage.getItem("savedDate");
+            if (savedDate !== today) {
+                localStorage.clear();
+                localStorage.setItem("savedDate", today);
+            }
+        }
+
+        // Load saved data from localStorage if it exists
+        function loadData() {
+            const savedWeight = localStorage.getItem("savedWeight");
+            const savedGoal = localStorage.getItem("savedGoal");
+            const savedActivities = localStorage.getItem("savedActivities");
+
+            if (savedWeight) {
+                document.getElementById("weight").value = savedWeight;
+            }
+            if (savedGoal) {
+                document.getElementById("goalSlider").value = savedGoal;
+                updateGoalValue(savedGoal);
+            }
+            if (savedActivities) {
+                activities = JSON.parse(savedActivities);
+            }
+            rebuildTable();
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            const weightValue = document.getElementById("weight").value;
+            const goalValue = document.getElementById("goalSlider").value;
+            localStorage.setItem("savedWeight", weightValue);
+            localStorage.setItem("savedGoal", goalValue);
+            localStorage.setItem("savedActivities", JSON.stringify(activities));
+        }
+
+        // Rebuild the table from the activities array
+        function rebuildTable() {
+            const tableBody = document
+                .getElementById("exerciseTable")
+                .getElementsByTagName("tbody")[0];
+            tableBody.innerHTML = ""; // Clear existing rows
+
+            let totalCals = 0;
+
+            // Recreate rows for each activity
+            activities.forEach(activity => {
+                const newRow = tableBody.insertRow();
+
+                const exerciseCell = newRow.insertCell();
+                exerciseCell.textContent = activity.name;
+
+                const durationCell = newRow.insertCell();
+                durationCell.textContent = activity.duration;
+
+                const calsCell = newRow.insertCell();
+                calsCell.textContent = activity.cals.toFixed(2);
+
+                totalCals += activity.cals;
+            });
+
+            // Update total calories text
+            document.getElementById("totalCalories").textContent =
+                "Total Calories Burned: " + totalCals.toFixed(2);
+
+            // Update progress bar
+            const goal = parseFloat(document.getElementById("goalSlider").value);
+            if (goal > 0) {
+                const percentage = Math.min((totalCals / goal) * 100, 100);
+                document.getElementById("progressBarFill").style.width = percentage + "%";
+            }
+
+            // Compare with goal
+            const goalStatus = document.getElementById("goalStatus");
+            if (!isNaN(goal) && goal > 0) {
+                if (totalCals < goal) {
+                    goalStatus.textContent =
+                        `You still need ${(goal - totalCals).toFixed(2)} calories to reach your daily goal.`;
+                } else {
+                    goalStatus.textContent =
+                        `Great job! You've reached or exceeded your daily goal by ${(totalCals - goal).toFixed(2)} calories. 
+            Congratulations on completing your goal!`;
+                }
+            } else {
+                goalStatus.textContent = "Please set a valid daily goal.";
+            }
+        }
+
+        // Add a new activity
+        function addExercise() {
+            const weight = parseFloat(document.getElementById("weight").value);
+            const exerciseSelect = document.getElementById("exercise");
+            const metValue = parseFloat(exerciseSelect.value);
+            const exerciseName = exerciseSelect.options[exerciseSelect.selectedIndex].text;
+            const durationMin = parseFloat(document.getElementById("duration").value);
+
+            // Validate user inputs
+            if (isNaN(weight) || weight <= 0) {
+                alert("Please enter a valid weight.");
+                return;
+            }
+            if (isNaN(durationMin) || durationMin <= 0) {
+                alert("Please enter a valid duration.");
+                return;
+            }
+
+            // Convert duration to hours
+            const durationHr = durationMin / 60;
+
+            // Calculate calories burned: MET * weight * duration (hours)
+            const calsBurned = metValue * weight * durationHr;
+
+            // Add to the activities array
+            activities.push({
+                name: exerciseName,
+                duration: durationMin,
+                cals: calsBurned
+            });
+
+            // Save to localStorage and rebuild table
+            saveData();
+            rebuildTable();
+
+            // Clear duration field for convenience
+            document.getElementById("duration").value = "";
+        }
+    </script>
+</body>
+
+</html>
