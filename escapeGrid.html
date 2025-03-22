@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Escape the Grid</title>
+    <!-- Import Roboto Font -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+    <style>
+        /* Overall page background: lighter grey gradient */
+        body {
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(to bottom, #eeeeee, #cccccc);
+            height: 100vh;
+            background-attachment: fixed;
+
+        }
+
+        /* Header: top center, dark grey */
+        header {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        header h1 {
+            margin: 0;
+            color: #333;
+        }
+
+        /* Central container with darker grey gradient and white text */
+        .container {
+            background: linear-gradient(to bottom, #999, #666);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            color: #fff;
+            margin: 20px auto;
+            position: relative;
+            max-width: 90vw;
+        }
+
+        /* Level selection screen */
+        #levelPrompt p {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .level-selection {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .level-selection button {
+            margin: 5px 0;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            background-color: #333;
+            color: #fff;
+            border-radius: 5px;
+            width: 200px;
+        }
+
+        .level-selection button:hover {
+            background-color: #555;
+        }
+
+        /* Game area (maze view) */
+        #gameArea {
+            position: relative;
+            margin: 0 auto;
+            display: none;
+        }
+
+        .game-header {
+            position: relative;
+            margin-bottom: 10px;
+            height: 24px;
+        }
+
+        /* Best time (top left) and Time left (top right) above the maze */
+        #bestTimeDisplay,
+        #timerDisplay {
+            position: absolute;
+            top: 0;
+            margin-top: 5px;
+            font-size: 18px;
+        }
+
+        #bestTimeDisplay {
+            left: 0;
+        }
+
+        #timerDisplay {
+            right: 0;
+        }
+
+        canvas {
+            background: #fff;
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* Result screen (after win or time up) */
+        #resultScreen {
+            display: none;
+            margin-top: 20px;
+        }
+
+        #resultScreen p {
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Play Again button: label is a white reset icon */
+        #playAgainBtn {
+            padding: 10px 20px;
+            font-size: 20px;
+            cursor: pointer;
+            border: none;
+            background-color: #333;
+            color: #fff;
+            border-radius: 5px;
+        }
+
+        #playAgainBtn:hover {
+            background-color: #555;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Top Centered Title -->
+    <header>
+        <h1>Escape the Grid</h1>
+    </header>
+    <!-- Central Container -->
+    <div class="container" id="mainContainer">
+        <!-- Level Selection Screen -->
+        <div id="levelPrompt">
+            <p>Select Difficulty Level</p>
+            <div class="level-selection">
+                <button id="easyBtn">Easy</button>
+                <button id="mediumBtn">Medium</button>
+                <button id="hardBtn">Hard</button>
+            </div>
+        </div>
+        <!-- Game Area -->
+        <div id="gameArea">
+            <div class="game-header">
+                <div id="mazeWrapper">
+                    <div id="bestTimeDisplay">Best Time: N/A</div>
+                <div id="timerDisplay">Time Left: </div>
+            </div>
+            <canvas id="mazeCanvas"></canvas>
+
+                </div>
+                
+        </div>
+        <!-- Result Screen -->
+        <div id="resultScreen">
+            <p id="resultMessage"></p>
+            <!-- The Play Again button shows a reset icon in white (using Unicode) -->
+            <button id="playAgainBtn" title="Play Again">&#x21bb;</button>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let rows, cols, cellSize;
+        let maze = [];
+        let playerRow, playerCol;
+        let timerInterval;
+        let timeLeft;
+        let currentLevel = "";
+        let startTime;
+        const canvas = document.getElementById("mazeCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Maze cell constructor
+        function Cell(row, col) {
+            this.row = row;
+            this.col = col;
+            this.walls = { top: true, right: true, bottom: true, left: true };
+            this.visited = false;
+        }
+
+        // Generate a perfect maze using recursive backtracking.
+        function generateMaze() {
+            maze = [];
+            for (let r = 0; r < rows; r++) {
+                maze[r] = [];
+                for (let c = 0; c < cols; c++) {
+                    maze[r][c] = new Cell(r, c);
+                }
+            }
+            const stack = [];
+            let current = maze[0][0];
+            current.visited = true;
+            while (true) {
+                let next = getUnvisitedNeighbor(current);
+                if (next) {
+                    next.visited = true;
+                    stack.push(current);
+                    removeWalls(current, next);
+                    current = next;
+                } else if (stack.length > 0) {
+                    current = stack.pop();
+                } else {
+                    break;
+                }
+            }
+        }
+
+        // Return a random unvisited neighbor of the given cell.
+        function getUnvisitedNeighbor(cell) {
+            const neighbors = [];
+            let r = cell.row, c = cell.col;
+            if (r > 0 && !maze[r - 1][c].visited) neighbors.push(maze[r - 1][c]);
+            if (c < cols - 1 && !maze[r][c + 1].visited) neighbors.push(maze[r][c + 1]);
+            if (r < rows - 1 && !maze[r + 1][c].visited) neighbors.push(maze[r + 1][c]);
+            if (c > 0 && !maze[r][c - 1].visited) neighbors.push(maze[r][c - 1]);
+            if (neighbors.length > 0) {
+                return neighbors[Math.floor(Math.random() * neighbors.length)];
+            } else {
+                return undefined;
+            }
+        }
+
+        // Remove the walls between two adjacent cells.
+        function removeWalls(a, b) {
+            let x = a.col - b.col;
+            if (x === 1) {
+                a.walls.left = false;
+                b.walls.right = false;
+            } else if (x === -1) {
+                a.walls.right = false;
+                b.walls.left = false;
+            }
+            let y = a.row - b.row;
+            if (y === 1) {
+                a.walls.top = false;
+                b.walls.bottom = false;
+            } else if (y === -1) {
+                a.walls.bottom = false;
+                b.walls.top = false;
+            }
+        }
+
+        // Draw the maze grid, entry/exit markers, and the player.
+        function drawMaze() {
+            canvas.width = cols * cellSize;
+            canvas.height = rows * cellSize;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = "#000";
+            ctx.lineWidth = 2;
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    let cell = maze[r][c];
+                    let x = c * cellSize;
+                    let y = r * cellSize;
+                    if (cell.walls.top) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x + cellSize, y);
+                        ctx.stroke();
+                    }
+                    if (cell.walls.right) {
+                        ctx.beginPath();
+                        ctx.moveTo(x + cellSize, y);
+                        ctx.lineTo(x + cellSize, y + cellSize);
+                        ctx.stroke();
+                    }
+                    if (cell.walls.bottom) {
+                        ctx.beginPath();
+                        ctx.moveTo(x + cellSize, y + cellSize);
+                        ctx.lineTo(x, y + cellSize);
+                        ctx.stroke();
+                    }
+                    if (cell.walls.left) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, y + cellSize);
+                        ctx.lineTo(x, y);
+                        ctx.stroke();
+                    }
+                }
+            }
+            // Highlight the entry (top-left) and exit (bottom-right)
+            ctx.fillStyle = "#aaf";
+            ctx.fillRect(2, 2, cellSize - 4, cellSize - 4);
+            ctx.fillStyle = "#afa";
+            let exitX = (cols - 1) * cellSize;
+            let exitY = (rows - 1) * cellSize;
+            ctx.fillRect(exitX + 2, exitY + 2, cellSize - 4, cellSize - 4);
+            // Draw the player as a grey circle
+            let centerX = playerCol * cellSize + cellSize / 2;
+            let centerY = playerRow * cellSize + cellSize / 2;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, cellSize / 4, 0, Math.PI * 2);
+            ctx.fillStyle = "#888";
+            ctx.fill();
+        }
+
+        // Update the best time display in the game header.
+        function updateBestTimeDisplay() {
+            let storageKey = "best" + currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1);
+            let best = localStorage.getItem(storageKey);
+            document.getElementById("bestTimeDisplay").textContent = "Best Time: " + (best ? best + "s" : "N/A");
+        }
+
+        // Timer functions
+        function startTimer(duration) {
+            timeLeft = duration;
+            updateTimerDisplay();
+            timerInterval = setInterval(function () {
+                timeLeft--;
+                updateTimerDisplay();
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    endGame(false);
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            document.getElementById("timerDisplay").textContent = "Time Left: " + formatTime(timeLeft);
+        }
+
+        function formatTime(seconds) {
+            let minutes = Math.floor(seconds / 60);
+            let secs = seconds % 60;
+            return minutes + ":" + (secs < 10 ? "0" : "") + secs;
+        }
+
+        // Check if the player has reached the exit.
+        function checkWin() {
+            if (playerRow === rows - 1 && playerCol === cols - 1) {
+                clearInterval(timerInterval);
+                let finishTime = (Date.now() - startTime) / 1000;
+                finishTime = Math.round(finishTime * 100) / 100;
+                let storageKey = "best" + currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1);
+                let bestTime = localStorage.getItem(storageKey);
+                let message = "Congratulations! You've reached the exit in " + finishTime + " seconds.";
+                if (!bestTime || finishTime < parseFloat(bestTime)) {
+                    localStorage.setItem(storageKey, finishTime);
+                    message += " New best time!";
+                } else {
+                    message += " Best time: " + bestTime + " seconds.";
+                }
+                endGame(true, message);
+            }
+        }
+
+        // End the game: win indicates if the player won; message is for win details.
+        function endGame(win, message) {
+            if (!win) {
+                message = "Time's up! Game over.";
+            }
+            // Hide the game area and show the result screen with the message and Play Again button.
+            document.getElementById("gameArea").style.display = "none";
+            document.getElementById("resultMessage").textContent = message;
+            document.getElementById("resultScreen").style.display = "block";
+        }
+
+        // Listen for arrow key movements to control the player.
+        document.addEventListener("keydown", function (e) {
+            if (document.getElementById("gameArea").style.display === "none") return;
+            let current = maze[playerRow][playerCol];
+            if (e.key === "ArrowUp") {
+                if (!current.walls.top && playerRow > 0) {
+                    playerRow--;
+                    drawMaze();
+                    checkWin();
+                }
+            } else if (e.key === "ArrowDown") {
+                if (!current.walls.bottom && playerRow < rows - 1) {
+                    playerRow++;
+                    drawMaze();
+                    checkWin();
+                }
+            } else if (e.key === "ArrowLeft") {
+                if (!current.walls.left && playerCol > 0) {
+                    playerCol--;
+                    drawMaze();
+                    checkWin();
+                }
+            } else if (e.key === "ArrowRight") {
+                if (!current.walls.right && playerCol < cols - 1) {
+                    playerCol++;
+                    drawMaze();
+                    checkWin();
+                }
+            }
+        });
+
+        // Initialize the maze and game based on the selected level.
+        function init(level) {
+            currentLevel = level;
+            // Set maze dimensions, cell size, and timer duration based on difficulty.
+            if (level === "easy") {
+                rows = 10;
+                cols = 10;
+                cellSize = 40;
+                startTimer(60); // 1 minute
+            } else if (level === "medium") {
+                rows = 20;
+                cols = 20;
+                cellSize = 25;
+                startTimer(90); // 1.5 minutes
+            } else if (level === "hard") {
+                rows = 30;
+                cols = 30;
+                cellSize = 20;
+                startTimer(120); // 2 minutes
+            }
+            // Hide the level selection prompt and result screen, show the game area.
+            document.getElementById("levelPrompt").style.display = "none";
+            document.getElementById("resultScreen").style.display = "none";
+            document.getElementById("gameArea").style.display = "block";
+            updateBestTimeDisplay();
+            generateMaze();
+            playerRow = 0;
+            playerCol = 0;
+            startTime = Date.now();
+            drawMaze();
+        }
+
+        // Play Again button returns to the level selection screen.
+        document.getElementById("playAgainBtn").addEventListener("click", function () {
+            document.getElementById("resultScreen").style.display = "none";
+            document.getElementById("gameArea").style.display = "none";
+            document.getElementById("levelPrompt").style.display = "block";
+        });
+
+        // Level selection button event listeners.
+        document.getElementById("easyBtn").addEventListener("click", function () {
+            init("easy");
+        });
+        document.getElementById("mediumBtn").addEventListener("click", function () {
+            init("medium");
+        });
+        document.getElementById("hardBtn").addEventListener("click", function () {
+            init("hard");
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Dream Travel Destination Wheel</title>
+    <!-- Google Fonts: Moon Dance -->
+    <link href="https://fonts.googleapis.com/css2?family=Moon+Dance&display=swap" rel="stylesheet">
+    <style>
+        /* Reset */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            /* Gradient background: light blue → dark blue → black */
+            background: linear-gradient(to bottom, #ADD8E6, #00008B, #000000);
+            background-attachment: fixed;
+        }
+
+        /* Top header: no background; centered text with extra top margin */
+        #topHeader {
+            position: relative;
+            padding: 10px 20px;
+            background: transparent;
+            text-align: center;
+        }
+
+        #topHeader h1 {
+            margin: 60px 0 10px 0;
+            /* extra top margin */
+            font-size: 28px;
+            color: #0b0f1a;
+            /* blue-black color */
+            font-family: 'Moon Dance', cursive;
+        }
+
+        /* Customize button styled with dark blue-black background and light blue outline */
+        #customizeBtn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #0b0f1a;
+            border: 2px solid #ADD8E6;
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        #customizeBtn:hover {
+            background: #0a0d16;
+        }
+
+        /* Wheel container */
+        #wheel-container {
+            position: relative;
+            width: 500px;
+            height: 500px;
+            margin: 20px auto;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Spin button: centered within the inner circle (donut) */
+        #spinButton {
+            position: absolute;
+            top: calc(50% - 40px);
+            left: calc(50% - 40px);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: none;
+            background: #ff5722;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            z-index: 3;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        #spinButton:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Triangular arrow pointer attached to the right side of the spin button */
+        #arrow {
+            position: absolute;
+            left: calc(50% + 40px);
+            top: calc(50% - 10px);
+            /* arrow height is 20px */
+            width: 0;
+            height: 0;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-left: 15px solid #333;
+            z-index: 3;
+        }
+
+        /* Result container: flex layout with opacity; text on left, image on right */
+        #result {
+            max-width: 600px;
+            margin: 20px auto;
+            background: rgba(255, 255, 255, 0.9);
+            opacity: 0.9;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            /* centers both text and image vertically */
+            gap: 20px;
+        }
+
+        #result .result-text {
+            flex: 1;
+        }
+
+        #result .result-image img {
+            max-width: 200px;
+            height: auto;
+            border-radius: 4px;
+            border: 2px solid lightgrey;
+        }
+
+        /* Modal for customizing destination names */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 400px;
+        }
+
+        /* 8 input fields arranged as 2 rows of 4 with no labels */
+        #customFields {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        #customFields input {
+            width: 100%;
+            padding: 8px;
+            font-size: 14px;
+        }
+
+        .modal-buttons {
+            text-align: right;
+            margin-top: 10px;
+        }
+
+        /* Save button styled similarly to the customize button */
+        .modal-buttons button {
+            margin-left: 10px;
+            padding: 6px 10px;
+            border: 2px solid #ADD8E6;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        #saveBtn {
+            background: #0b0f1a;
+            color: #fff;
+        }
+
+        #cancelBtn {
+            background: #f44336;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Top header with centered instruction and customize button -->
+    <header id="topHeader">
+        <h1>Spin the wheel to find your dream travel destination</h1>
+        <button id="customizeBtn">Customize</button>
+    </header>
+
+    <!-- Wheel container -->
+    <div id="wheel-container">
+        <svg id="wheelSVG" viewBox="0 0 500 500">
+            <!-- Rotating wheel group (donut slices and text labels) -->
+            <g id="rotatingWheel" style="transform-origin: 250px 250px; transform: rotate(0deg);"></g>
+        </svg>
+        <!-- Central spin button -->
+        <button id="spinButton">Spin</button>
+        <!-- Triangular arrow pointer attached to the right side of the spin button -->
+        <div id="arrow"></div>
+    </div>
+
+    <!-- Result container -->
+    <div id="result" style="display:none;">
+        <div class="result-text"></div>
+        <div class="result-image"></div>
+    </div>
+
+    <!-- Modal for customizing destination names (8 input fields in 2 rows of 4) -->
+    <div id="customizeModal" class="modal">
+        <div class="modal-content">
+            <div id="customFields">
+                <!-- 8 input fields will be inserted here -->
+            </div>
+            <div class="modal-buttons">
+                <button id="saveBtn">Save</button>
+                <button id="cancelBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initial destinations (8 by default)
+        let destinations = [
+            "Japan",
+            "Italy",
+            "New Zealand",
+            "Thailand",
+            "Iceland",
+            "Morocco",
+            "Switzerland",
+            "Peru"
+        ];
+
+        // Colors for slices (cycle if needed)
+        const colors = [
+            "#FFCDD2",
+            "#F8BBD0",
+            "#E1BEE7",
+            "#D1C4E9",
+            "#C5CAE9",
+            "#BBDEFB",
+            "#B3E5FC",
+            "#B2EBF2"
+        ];
+
+        // SVG and wheel parameters
+        const svgNS = "http://www.w3.org/2000/svg";
+        const cx = 250, cy = 250;          // Center of the SVG
+        const outerRadius = 200;           // Outer radius of the donut slices
+        const innerRadius = 40;            // Inner radius (spin button touches here)
+        const labelRadius = (outerRadius + innerRadius) / 2; // Position for text labels
+
+        // Convert degrees to radians
+        function degToRad(deg) {
+            return deg * Math.PI / 180;
+        }
+
+        // Draw the wheel as a donut with sectors and text labels.
+        function drawWheel() {
+            const rotatingWheel = document.getElementById("rotatingWheel");
+            rotatingWheel.innerHTML = ""; // Clear previous contents
+
+            const N = destinations.length;
+            const sliceAngle = 360 / N;
+
+            for (let i = 0; i < N; i++) {
+                // Each slice spans from: center = i * sliceAngle + 90, with half-width = sliceAngle/2.
+                // Compute start and end angles (we add 90° so that slice 0 is at the top).
+                const startAngle = i * sliceAngle - sliceAngle / 2;
+                const endAngle = i * sliceAngle + sliceAngle / 2;
+
+                const outerStartAngle = startAngle + 90;
+                const outerEndAngle = endAngle + 90;
+
+                // Outer arc points
+                const x1 = cx + outerRadius * Math.cos(degToRad(outerStartAngle));
+                const y1 = cy + outerRadius * Math.sin(degToRad(outerStartAngle));
+                const x2 = cx + outerRadius * Math.cos(degToRad(outerEndAngle));
+                const y2 = cy + outerRadius * Math.sin(degToRad(outerEndAngle));
+
+                // Inner arc points (reverse order for inner arc)
+                const x3 = cx + innerRadius * Math.cos(degToRad(outerEndAngle));
+                const y3 = cy + innerRadius * Math.sin(degToRad(outerEndAngle));
+                const x4 = cx + innerRadius * Math.cos(degToRad(outerStartAngle));
+                const y4 = cy + innerRadius * Math.sin(degToRad(outerStartAngle));
+
+                const largeArcFlag = (sliceAngle > 180) ? 1 : 0;
+
+                const pathData = [
+                    "M", x1, y1,
+                    "A", outerRadius, outerRadius, 0, largeArcFlag, 1, x2, y2,
+                    "L", x3, y3,
+                    "A", innerRadius, innerRadius, 0, largeArcFlag, 0, x4, y4,
+                    "Z"
+                ].join(" ");
+
+                const path = document.createElementNS(svgNS, "path");
+                path.setAttribute("d", pathData);
+                path.setAttribute("fill", colors[i % colors.length]);
+                path.setAttribute("stroke", "#fff");
+                path.setAttribute("stroke-width", "2");
+                rotatingWheel.appendChild(path);
+
+                // Text label: place at the center of the arc.
+                const centerAngle = i * sliceAngle + 90;
+                const tx = cx + labelRadius * Math.cos(degToRad(centerAngle));
+                const ty = cy + labelRadius * Math.sin(degToRad(centerAngle));
+
+                const text = document.createElementNS(svgNS, "text");
+                text.setAttribute("x", tx);
+                text.setAttribute("y", ty);
+                text.setAttribute("fill", "#333");
+                text.setAttribute("font-size", "16");
+                text.setAttribute("font-family", "sans-serif");
+                text.setAttribute("text-anchor", "middle");
+                text.setAttribute("dominant-baseline", "middle");
+                text.textContent = destinations[i];
+                rotatingWheel.appendChild(text);
+            }
+        }
+
+        // Initial drawing of the wheel
+        drawWheel();
+
+        // Spin functionality
+        let currentRotation = 0;
+        const spinButton = document.getElementById("spinButton");
+        const resultDiv = document.getElementById("result");
+        const rotatingWheel = document.getElementById("rotatingWheel");
+
+        spinButton.addEventListener("click", () => {
+            spinButton.disabled = true;
+            // Hide previous result
+            resultDiv.style.display = "none";
+            resultDiv.innerHTML = '<div class="result-text"></div><div class="result-image"></div>';
+
+            // Choose a large random extra rotation (between 3000° and 6000°)
+            const extraRotation = Math.floor(Math.random() * 3000) + 3000;
+            const newRotation = currentRotation + extraRotation;
+
+            rotatingWheel.style.transition = "transform 4s cubic-bezier(0.33, 1, 0.68, 1)";
+            rotatingWheel.style.transform = `rotate(${newRotation}deg)`;
+
+            rotatingWheel.addEventListener("transitionend", onSpinEnd);
+
+            function onSpinEnd() {
+                rotatingWheel.removeEventListener("transitionend", onSpinEnd);
+                currentRotation = newRotation;
+                const N = destinations.length;
+                const sliceAngle = 360 / N;
+                // The pointer is fixed at the right side (0° in standard math coordinates).
+                // In the wheel’s unrotated coordinate system, slice centers are at (i*sliceAngle + 90).
+                // Determine the winning slice by “undoing” the rotation.
+                let modRot = currentRotation % 360;
+                let effective = (360 - modRot) % 360;
+                let shift = (effective - (90 - sliceAngle / 2) + 360) % 360;
+                let winnerIndex = Math.floor(shift / sliceAngle) % N;
+                const winner = destinations[winnerIndex];
+
+                const textDiv = resultDiv.querySelector(".result-text");
+                textDiv.innerHTML = `<p>And your dream destination is... <strong>${winner}</strong>!</p><p>Loading info...</p>`;
+                resultDiv.style.display = "flex";
+
+                // Use Wikipedia REST API to fetch summary and thumbnail.
+                fetch("https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(winner))
+                    .then(response => response.json())
+                    .then(data => {
+                        let htmlText = `<h2>${data.title}</h2>`;
+                        htmlText += `<p>${data.extract}</p>`;
+                        textDiv.innerHTML = htmlText;
+                        const imageDiv = resultDiv.querySelector(".result-image");
+                        if (data.thumbnail && data.thumbnail.source) {
+                            imageDiv.innerHTML = `<img src="${data.thumbnail.source}" alt="${data.title} image">`;
+                        } else {
+                            imageDiv.innerHTML = "";
+                        }
+                    })
+                    .catch(err => {
+                        textDiv.innerHTML = `<p>Sorry, there was an error loading information.</p>`;
+                        console.error(err);
+                    })
+                    .finally(() => {
+                        spinButton.disabled = false;
+                    });
+            }
+        });
+
+        // Customization modal functionality:
+        // Create 8 input fields (arranged in 2 rows of 4) with no labels.
+        const customizeBtn = document.getElementById("customizeBtn");
+        const customizeModal = document.getElementById("customizeModal");
+        const customFields = document.getElementById("customFields");
+        const saveBtn = document.getElementById("saveBtn");
+        const cancelBtn = document.getElementById("cancelBtn");
+
+        function populateCustomFields() {
+            customFields.innerHTML = "";
+            for (let i = 0; i < 8; i++) {
+                const input = document.createElement("input");
+                input.type = "text";
+                input.id = "dest" + i;
+                input.value = destinations[i] || "";
+                customFields.appendChild(input);
+            }
+        }
+
+        customizeBtn.addEventListener("click", () => {
+            populateCustomFields();
+            customizeModal.style.display = "block";
+        });
+
+        cancelBtn.addEventListener("click", () => {
+            customizeModal.style.display = "none";
+        });
+
+        saveBtn.addEventListener("click", () => {
+            const newDestinations = [];
+            for (let i = 0; i < 8; i++) {
+                const input = document.getElementById("dest" + i);
+                const value = input.value.trim();
+                newDestinations.push(value || `Destination ${i + 1}`);
+            }
+            destinations = newDestinations;
+            drawWheel();
+            customizeModal.style.display = "none";
+        });
+
+        // Close modal if clicking outside of modal content
+        window.addEventListener("click", (event) => {
+            if (event.target === customizeModal) {
+                customizeModal.style.display = "none";
+            }
+        });
+    </script>
+</body>
+
+</html>
