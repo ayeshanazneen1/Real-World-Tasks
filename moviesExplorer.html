@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Movies Explorer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Import Moon Dance font from Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Moon+Dance&display=swap" rel="stylesheet">
+    <!-- Import Font Awesome v5 for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        /* Global Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #FADCD9;
+            /* red–brown background */
+            color: #333;
+        }
+
+        header {
+            text-align: center;
+            padding: 1rem;
+        }
+
+        header h1 {
+            font-family: 'Moon Dance', cursive;
+            color: #8B2500;
+            /* red–brown color */
+            font-size: 2.5rem;
+        }
+
+        /* Filter Controls */
+        #controls {
+            padding: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        #controls select,
+        #controls input {
+            padding: 0.5rem;
+            font-size: 1rem;
+            border-radius: 20px;
+            background-color: rgba(255, 255, 255, 0.6);
+            border: 1px solid #ccc;
+        }
+
+        #controls button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #8B2500;
+            /* dark red–brown */
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            /* large enough so icons are visible */
+            transition: background-color 0.3s ease;
+        }
+
+        #controls button:hover {
+            background-color: #A0522D;
+        }
+
+        /* Film Cards Container */
+        #film-container {
+            display: grid;
+            grid-gap: 1rem;
+            padding: 1rem;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        }
+
+        /* Film Card Layout */
+        .film-card {
+            display: grid;
+            grid-template-columns: 30% 70%;
+            height: 250px;
+            border: 5px solid;
+            border-image: linear-gradient(45deg, #FADCD9, #8B2500) 1;
+            overflow: hidden;
+            position: relative;
+            background: #fff;
+        }
+
+        /* Left Column (30%) */
+        .card-left {
+            position: relative;
+            padding: 10px;
+            z-index: 2;
+        }
+
+        /* Container for the title and director text */
+        .left-text {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            z-index: 2;
+
+            padding-bottom: 130px;
+        }
+
+        .film-title {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .film-director {
+            font-size: 0.9em;
+        }
+
+        /* Left background image that appears on hover */
+        .left-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            transform: translateX(-100%);
+            transition: all 0.5s ease;
+            z-index: 1;
+        }
+
+        .film-card:hover .card-left .left-bg {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* Right Column (70%) */
+        .card-right {
+            position: relative;
+        }
+
+        /* The large image shown initially on the right */
+        .right-large {
+            width: 100%;
+            height: 100%;
+            transition: all 0.5s ease;
+        }
+
+        .right-large img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .film-card:hover .card-right .right-large {
+            opacity: 0;
+            transform: translateX(-100%);
+        }
+
+        /* Details panel that appears on hover in the right column */
+        .right-details {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px;
+            box-sizing: border-box;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .film-card:hover .card-right .right-details {
+            opacity: 1;
+        }
+
+        /* Top row in details panel: small thumbnail and info */
+        .right-top {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .right-thumb {
+            width: 50px;
+            height: 50px;
+            margin-right: 10px;
+        }
+
+        .right-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .right-info {
+            font-size: 0.9em;
+        }
+
+        /* Description below the top row */
+        .right-description {
+            font-size: 0.8em;
+            overflow-y: auto;
+            flex: 1;
+            margin-bottom: 130px;
+        }
+
+        /* No results message */
+        .no-results {
+            grid-column: 1 / -1;
+            text-align: center;
+            font-size: 1.2em;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Movies Explorer</h1>
+    </header>
+    <section id="controls">
+        <select id="director-filter">
+            <option value="">All Directors</option>
+        </select>
+        <select id="producer-filter">
+            <option value="">All Producers</option>
+        </select>
+        <select id="decade-filter">
+            <option value="">All Decades</option>
+        </select>
+        <input type="number" id="limit" placeholder="Limit films" min="1">
+        <button id="apply-filters" title="Apply Filters"><i class="fas fa-check"></i></button>
+        <button id="reset-filters" title="Reset Filters"><i class="fas fa-undo"></i></button>
+    </section>
+    <section id="film-container">
+        <!-- Film cards will be injected here -->
+    </section>
+    <script>
+        let films = [];
+        const filmContainer = document.getElementById("film-container");
+        const directorFilter = document.getElementById("director-filter");
+        const producerFilter = document.getElementById("producer-filter");
+        const decadeFilter = document.getElementById("decade-filter");
+        const limitInput = document.getElementById("limit");
+        const applyFiltersBtn = document.getElementById("apply-filters");
+        const resetFiltersBtn = document.getElementById("reset-filters");
+
+        // Fetch films from the Studio Ghibli API
+        fetch("https://ghibliapi.vercel.app/films/")
+            .then(response => response.json())
+            .then(data => {
+                films = data;
+                populateFilters();
+                displayFilms(films);
+            })
+            .catch(error => console.error("Error fetching films:", error));
+
+        // Populate dropdowns with unique values
+        function populateFilters() {
+            const directors = new Set();
+            const producers = new Set();
+            const decades = new Set();
+
+            films.forEach(film => {
+                directors.add(film.director);
+                film.producer.split(",").forEach(prod => producers.add(prod.trim()));
+                const year = parseInt(film.release_date);
+                if (!isNaN(year)) {
+                    decades.add(Math.floor(year / 10) * 10 + "s");
+                }
+            });
+
+            directors.forEach(dir => {
+                const opt = document.createElement("option");
+                opt.value = dir;
+                opt.textContent = dir;
+                directorFilter.appendChild(opt);
+            });
+            producers.forEach(prod => {
+                const opt = document.createElement("option");
+                opt.value = prod;
+                opt.textContent = prod;
+                producerFilter.appendChild(opt);
+            });
+            decades.forEach(dec => {
+                const opt = document.createElement("option");
+                opt.value = dec;
+                opt.textContent = dec;
+                decadeFilter.appendChild(opt);
+            });
+        }
+
+        // Display films as cards
+        function displayFilms(filmsToDisplay) {
+            filmContainer.innerHTML = "";
+            if (filmsToDisplay.length === 0) {
+                filmContainer.innerHTML = '<p class="no-results">No relevant results found</p>';
+                return;
+            }
+            filmsToDisplay.forEach(film => {
+                const card = document.createElement("div");
+                card.className = "film-card";
+                card.innerHTML = `
+          <div class="card-left">
+            <div class="left-text">
+              <div class="film-title">${film.title}</div>
+              <div class="film-director">${film.director}</div>
+            </div>
+            <div class="left-bg" style="background-image: url('${film.image}');"></div>
+          </div>
+          <div class="card-right">
+            <div class="right-large">
+              <img src="${film.image}" alt="${film.title}">
+            </div>
+            <div class="right-details">
+              <div class="right-top">
+                <div class="right-thumb">
+                  <img src="${film.movie_banner}" alt="${film.title}">
+                </div>
+                <div class="right-info">
+                  <div><strong>Release Date:</strong> ${film.release_date}</div>
+                  <div><strong>Producer:</strong> ${film.producer}</div>
+                </div>
+              </div>
+              <div class="right-description">${film.description}</div>
+            </div>
+          </div>
+        `;
+                filmContainer.appendChild(card);
+            });
+        }
+
+        // Filter films based on selected criteria and limit
+        function filterAndRenderFilms() {
+            let filtered = films.slice();
+            const selectedDirector = directorFilter.value;
+            const selectedProducer = producerFilter.value;
+            const selectedDecade = decadeFilter.value;
+            const limit = parseInt(limitInput.value);
+
+            if (selectedDirector) {
+                filtered = filtered.filter(film => film.director === selectedDirector);
+            }
+            if (selectedProducer) {
+                filtered = filtered.filter(film =>
+                    film.producer.split(",").map(p => p.trim()).includes(selectedProducer)
+                );
+            }
+            if (selectedDecade) {
+                filtered = filtered.filter(film => {
+                    const year = parseInt(film.release_date);
+                    return !isNaN(year) && Math.floor(year / 10) * 10 + "s" === selectedDecade;
+                });
+            }
+            if (!isNaN(limit) && limit > 0) {
+                filtered = filtered.slice(0, limit);
+            }
+
+            displayFilms(filtered);
+        }
+
+        applyFiltersBtn.addEventListener("click", filterAndRenderFilms);
+        resetFiltersBtn.addEventListener("click", () => {
+            directorFilter.value = "";
+            producerFilter.value = "";
+            decadeFilter.value = "";
+            limitInput.value = "";
+            displayFilms(films);
+        });
+    </script>
+</body>
+
+</html>

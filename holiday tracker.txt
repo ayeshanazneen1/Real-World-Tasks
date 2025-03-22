@@ -1,0 +1,7 @@
+The main functionalities of the webpage are:
+- It enables users to find holidays for a specific country and year by entering the necessary information.
+- It provides additional details about the holiday using the Wikipedia REST API.
+- It shows a countdown timer until the next holiday when the user requests information for a specific country. 
+
+
+Create a web page that lets users find information about holidays in a specific country on a specific date. The web page should feature a dropdown menu for selecting countries using this API https://date.nager.at/api/v3/AvailableCountries. It should be capable of retrieving holiday information for countries through an API endpoint like /api/v3/publicholidays/{year}/{countryCode}.

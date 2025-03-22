@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>World Watches</title>
+    <!-- Importing fonts: Roboto for Modern, Orbitron for Neon, Merriweather for Vintage -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Global Styles */
+        body {
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* Theme-specific styles */
+        .theme-modern {
+            font-family: 'Roboto', sans-serif;
+            background: #f8f8f8;
+            color: #333;
+        }
+
+        .theme-neon {
+            font-family: 'Orbitron', sans-serif;
+            background: #2e004f;
+            /* dark purple background */
+            color: #0ff;
+            /* cyan text */
+        }
+
+        .theme-vintage {
+            font-family: 'Merriweather', serif;
+            background: #f5e6d3;
+            /* warm beige background */
+            color: #5c4033;
+            /* dark brown text */
+        }
+
+        /* Container for the 15 watches in a 5-column grid, centered */
+        #clock-container {
+            display: grid;
+            grid-template-columns: repeat(5, 150px);
+            gap: 20px;
+            justify-content: center;
+            margin: 20px auto;
+        }
+
+        .clock {
+            text-align: center;
+        }
+
+        /* The watch face */
+        .watch {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            border: 4px solid currentColor;
+            border-radius: 50%;
+            /* circular for analog mode */
+            margin: auto;
+            overflow: hidden;
+            transition: border-radius 0.3s, background 0.3s, box-shadow 0.3s;
+        }
+
+        .theme-modern .watch {
+            border-color: #4e4c4c;
+            background: #fff;
+            box-shadow: 0 4px 8px rgba(48, 47, 47, 0.1);
+        }
+
+        .theme-neon .watch {
+            border-color: #f0f;
+            background: #000;
+            box-shadow: 0 0 10px #0ff;
+        }
+
+        .theme-vintage .watch {
+            border-color: #a67c52;
+            background: #fdf5e6;
+            box-shadow: 0 4px 8px rgba(166, 124, 82, 0.5);
+        }
+
+
+        /* Digital mode: change the shape of the watch to a rounded square */
+        .watch.digital {
+            border-radius: 15px;
+        }
+
+        /* Analog watch hands */
+        .hand {
+            position: absolute;
+            bottom: 75px;
+            /* center of the 150px watch */
+            left: 50%;
+            transform-origin: bottom center;
+            transform: translateX(-50%);
+        }
+
+        .hand.hour {
+            width: 6px;
+            height: 35px;
+            background: currentColor;
+            border-radius: 3px;
+        }
+
+        .hand.minute {
+            width: 4px;
+            height: 50px;
+            background: currentColor;
+            border-radius: 2px;
+        }
+
+        .hand.second {
+            width: 2px;
+            height: 60px;
+            background: currentColor;
+            /* Use theme color instead of red */
+            border-radius: 1px;
+        }
+
+        /* Center dot */
+        .center {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: currentColor;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
+        /* Digital display: bigger font and no outline */
+        .digital-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: inherit;
+            font-size: 28px;
+            display: none;
+            background: transparent;
+            /* Remove border and border-radius for digital display */
+            z-index: 5;
+        }
+
+        /* Markers for the analog clock digits: outlined unfilled lines with rounded edges */
+        .marker {
+            position: absolute;
+            width: 4px;
+            height: 12px;
+            background: transparent;
+            border: 2px solid currentColor;
+            border-radius: 3px;
+            transform-origin: bottom center;
+            z-index: 1;
+        }
+
+        /* Position markers correctly from the center (75px,75px) */
+        /* They are positioned by placing their bottom at the center and then rotating and translating upward */
+        /* Analog country label inside the watch at the bottom */
+        .analog-country-label {
+            position: absolute;
+            bottom: 25px;
+            width: 100%;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: currentColor;
+        }
+
+        /* Digital country label below the watch */
+        .digital-country-label {
+            margin-top: 5px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: currentColor;
+            display: none;
+        }
+
+        /* Control panel in the top right corner - no visible background container */
+        #controls {
+            position: fixed;
+            top: 30px;
+            right: 10px;
+            padding: 0;
+            background: none;
+            box-shadow: none;
+            border: none;
+            z-index: 100;
+            color: inherit;
+            display: flex;
+            gap: 10px;
+        }
+
+        #controls button,
+        #controls select {
+            border: 1px solid currentColor;
+            border-radius: 4px;
+            background: transparent;
+            color: inherit;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body class="theme-modern">
+    <!-- Control Panel: Watch Mode Toggle and Theme Selector (no container background) -->
+    <div id="controls">
+        <button id="toggleWatch">Switch to Digital</button>
+        <select id="themeSelect">
+            <option value="modern">Modern</option>
+            <option value="neon">Neon</option>
+            <option value="vintage">Vintage</option>
+        </select>
+    </div>
+
+    <!-- Container for the watches -->
+    <div id="clock-container"></div>
+
+    <script>
+        // Global variable to track the current watch mode ('analog' or 'digital')
+        let mode = 'analog';
+
+        // Array of clocks with country names and corresponding time zones
+        const clocks = [
+            { name: 'China', timezone: 'Asia/Shanghai' },
+            { name: 'Romania', timezone: 'Europe/Bucharest' },
+            { name: 'Bangladesh', timezone: 'Asia/Dhaka' },
+            { name: 'New York', timezone: 'America/New_York' },
+            { name: 'Martinique', timezone: 'America/Martinique' },
+            { name: 'Serbia', timezone: 'Europe/Belgrade' },
+            { name: 'Senegal', timezone: 'Africa/Dakar' },
+            { name: 'Morocco', timezone: 'Africa/Casablanca' },
+            { name: 'Sri Lanka', timezone: 'Asia/Colombo' },
+            { name: 'Pakistan', timezone: 'Asia/Karachi' },
+            { name: 'Istanbul', timezone: 'Europe/Istanbul' },
+            { name: 'Paris', timezone: 'Europe/Paris' },
+            { name: 'Egypt', timezone: 'Africa/Cairo' },
+            { name: 'Mali', timezone: 'Africa/Bamako' },
+            { name: 'Algeria', timezone: 'Africa/Algiers' }
+        ];
+
+        const container = document.getElementById('clock-container');
+
+        // Create each clock element.
+        clocks.forEach((clock, index) => {
+            const clockDiv = document.createElement('div');
+            clockDiv.className = 'clock';
+            clockDiv.id = 'clock-' + index;
+            // Each clock has a .watch element with analog country label inside, and a separate digital label below.
+            clockDiv.innerHTML = `
+        <div class="watch">
+          <div class="hand hour"></div>
+          <div class="hand minute"></div>
+          <div class="hand second"></div>
+          <div class="center"></div>
+          <div class="digital-display"></div>
+          <div class="analog-country-label">${clock.name}</div>
+        </div>
+        <div class="digital-country-label">${clock.name}</div>
+      `;
+            container.appendChild(clockDiv);
+        });
+
+        // For each watch, add 12 markers (one for each digit) positioned correctly from the center.
+        document.querySelectorAll('.watch').forEach(watch => {
+            for (let i = 0; i < 12; i++) {
+                const marker = document.createElement('div');
+                marker.className = 'marker';
+                // Place the marker so that its bottom center is at the center (75px, 75px) of the watch,
+                // then rotate by the appropriate angle and translate upward.
+                marker.style.top = "60px";
+                marker.style.left = "71px";
+                // Adjust the translation value (-70px) to correctly position the markers along the dial.
+                marker.style.transform = `rotate(${i * 30}deg) translateY(-60px)`;
+                watch.appendChild(marker);
+            }
+        });
+
+        // Helper function to pad single digits with a leading zero.
+        function pad(num) {
+            return num < 10 ? '0' + num : num;
+        }
+
+        // Update all clocks every second.
+        function updateClocks() {
+            const now = new Date();
+            clocks.forEach((clock, index) => {
+                // Get the time parts for the clock's time zone.
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: clock.timezone,
+                    hour: 'numeric',
+                    minute: 'numeric',
+                    second: 'numeric',
+                    hour12: false
+                });
+                const parts = formatter.formatToParts(now);
+                let hour = 0, minute = 0, second = 0;
+                parts.forEach(part => {
+                    if (part.type === 'hour') hour = parseInt(part.value, 10);
+                    else if (part.type === 'minute') minute = parseInt(part.value, 10);
+                    else if (part.type === 'second') second = parseInt(part.value, 10);
+                });
+
+                // Calculate rotation angles for the analog hands.
+                const secondAngle = second * 6; // 360°/60 seconds
+                const minuteAngle = minute * 6 + second * 0.1;
+                const hourAngle = ((hour % 12) * 30) + (minute * 0.5);
+
+                const clockElem = document.getElementById('clock-' + index);
+                const hourHand = clockElem.querySelector('.hand.hour');
+                const minuteHand = clockElem.querySelector('.hand.minute');
+                const secondHand = clockElem.querySelector('.hand.second');
+                const centerDot = clockElem.querySelector('.center');
+                const digitalDisplay = clockElem.querySelector('.digital-display');
+                const analogLabel = clockElem.querySelector('.analog-country-label');
+                const digitalLabel = clockElem.querySelector('.digital-country-label');
+                const watchFace = clockElem.querySelector('.watch');
+
+                // Update analog hands.
+                hourHand.style.transform = `translateX(-50%) rotate(${hourAngle}deg)`;
+                minuteHand.style.transform = `translateX(-50%) rotate(${minuteAngle}deg)`;
+                secondHand.style.transform = `translateX(-50%) rotate(${secondAngle}deg)`;
+
+                // Prepare digital time string.
+                const digitalTime = pad(hour) + ":" + pad(minute) + ":" + pad(second);
+                digitalDisplay.textContent = digitalTime;
+
+                // Toggle between analog (mechanical) and digital display.
+                if (mode === 'analog') {
+                    digitalDisplay.style.display = 'none';
+                    hourHand.style.display = 'block';
+                    minuteHand.style.display = 'block';
+                    secondHand.style.display = 'block';
+                    centerDot.style.display = 'block';
+                    clockElem.querySelectorAll('.marker').forEach(marker => {
+                        marker.style.display = 'block';
+                    });
+                    // Show the analog country label inside the watch.
+                    analogLabel.style.display = 'block';
+                    // Hide the digital country label below.
+                    digitalLabel.style.display = 'none';
+                    // Ensure the watch face remains circular.
+                    watchFace.classList.remove('digital');
+                } else {
+                    digitalDisplay.style.display = 'block';
+                    hourHand.style.display = 'none';
+                    minuteHand.style.display = 'none';
+                    secondHand.style.display = 'none';
+                    centerDot.style.display = 'none';
+                    clockElem.querySelectorAll('.marker').forEach(marker => {
+                        marker.style.display = 'none';
+                    });
+                    // Hide the analog country label.
+                    analogLabel.style.display = 'none';
+                    // Show the digital country label below the watch.
+                    digitalLabel.style.display = 'block';
+                    // Change the shape of the watch face to a rounded square.
+                    watchFace.classList.add('digital');
+                }
+            });
+        }
+
+        // Initial clock update and then every second.
+        updateClocks();
+        setInterval(updateClocks, 1000);
+
+        // Toggle between analog and digital watch modes.
+        document.getElementById('toggleWatch').addEventListener('click', function () {
+            if (mode === 'analog') {
+                mode = 'digital';
+                this.textContent = 'Switch to Analog';
+            } else {
+                mode = 'analog';
+                this.textContent = 'Switch to Digital';
+            }
+            updateClocks();
+        });
+
+        // Change theme based on selection.
+        document.getElementById('themeSelect').addEventListener('change', function () {
+            document.body.classList.remove('theme-modern', 'theme-neon', 'theme-vintage');
+            document.body.classList.add('theme-' + this.value);
+        });
+    </script>
+</body>
+
+</html>
